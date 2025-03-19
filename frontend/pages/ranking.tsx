@@ -1,23 +1,27 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-// Definindo a interface para os dados do ranking
 interface RankingUser {
   username: string;
   commits: number;
 }
 
 export default function RankingPage() {
-  const [ranking, setRanking] = useState<RankingUser[]>([]); // Tipando corretamente
+  const [ranking, setRanking] = useState<RankingUser[]>([]);
 
   useEffect(() => {
     axios.get("http://localhost:8000/ranking")
       .then((response) => {
-        setRanking(response.data);
+        if (Array.isArray(response.data)) {
+          setRanking(response.data as RankingUser[]);
+        } else {
+          console.error("Erro: resposta inválida", response.data);
+        }
       })
       .catch((error) => {
         console.error("Erro ao buscar ranking:", error);
       });
+
   }, []);
 
   return (

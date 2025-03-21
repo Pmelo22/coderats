@@ -88,12 +88,12 @@ const RankingPage: React.FC = () => {
       console.error("Erro ao atualizar commit count:", error);
     }
   }
-  
 
   useEffect(() => {
     if (session) {
-      console.log("Sessão ativa:", session);
-      fetchRankings();
+      fetchRankings().then(() => {
+        ranking.forEach((entry) => updateCommitCount(entry.username, entry.id));
+      });
     }
   }, [session]);
 

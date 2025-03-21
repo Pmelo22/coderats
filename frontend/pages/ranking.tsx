@@ -85,15 +85,15 @@ const RankingPage: React.FC = () => {
     try {
       console.log(`Atualizando commits para ${username} no documento ${rankingDocId}`);
   
-      // Token de autenticação (adicione no .env.local e carregue com process.env)
-      const GITHUB_TOKEN = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
+      // Obtém o token do ambiente (será usado apenas no servidor)
+      const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
   
-      // Configuração da requisição com autenticação
+      // Adiciona autenticação somente se o token estiver presente
       const headers = GITHUB_TOKEN
-        ? { Authorization: `token ${GITHUB_TOKEN}` }
+        ? { Authorization: `Bearer ${GITHUB_TOKEN}` }
         : {};
   
-      // Consulta os eventos do usuário no GitHub
+      // Faz a requisição autenticada
       const response = await axios.get<GitHubEvent[]>(
         `https://api.github.com/users/${username}/events`,
         { headers }

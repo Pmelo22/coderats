@@ -54,7 +54,9 @@ const RankingPage: React.FC = () => {
         where("username", "==", session.user.login)
       );
       const userRankingSnapshot = await getDocs(userRankingQuery);
+      console.log("Resultados da query de ranking para usuário:", userRankingSnapshot.docs);
       if (userRankingSnapshot.empty) {
+        console.log("Nenhuma entrada encontrada. Criando entrada para o usuário.");
         await addDoc(collection(db, "rankings"), {
           username: session.user.login,
           commits: 0,
@@ -71,6 +73,7 @@ const RankingPage: React.FC = () => {
           commits: data.commits !== undefined ? data.commits : 0,
         };
       });
+      console.log("Ranking obtido:", rankingList);
       setRanking(rankingList);
     } catch (error) {
       console.error("Erro ao buscar rankings:", error);
@@ -80,12 +83,8 @@ const RankingPage: React.FC = () => {
   // Função para atualizar o número de commits do usuário via API do GitHub
   async function updateCommitCount(username: string, rankingDocId: string) {
     try {
-      const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-      const headers = GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {};
-      const response = await axios.get<GitHubEvent[]>(
-        `https://api.github.com/users/${username}/events`,
-        { headers }
-      );
+      console.log(`Atualizando commits para ${username} no documento ${rankingDocId}`);
+      const response = await axios.get<GitHubEvent[]>(`https://api.github.com/users/${username}/events`);
       const events = response.data;
       const pushEvents = events.filter((event) => event.type === "PushEvent");
       const commitCount = pushEvents.reduce((total: number, event: GitHubEvent) => {
@@ -101,13 +100,10 @@ const RankingPage: React.FC = () => {
 
   useEffect(() => {
     if (session) {
+      console.log("Sessão ativa:", session);
       fetchRankings();
-      const interval = setInterval(() => {
-        ranking.forEach((entry) => updateCommitCount(entry.username, entry.id));
-      }, 10000); // Atualiza a cada 10 segundos
-      return () => clearInterval(interval);
     }
-  }, [session, ranking]);
+  }, [session]);
 
   return (
     <div className="container">
@@ -128,6 +124,14 @@ const RankingPage: React.FC = () => {
               <span className="position">{index + 1}.</span>
               <span className="username">{entry.username}</span>
               <span className="commits">{entry.commits} commits</span>
+              {session && session.user?.login === entry.username && (
+                <button
+                  className="update-button"
+                  onClick={() => updateCommitCount(entry.username, entry.id)}
+                >
+                  Atualizar Commits
+                </button>
+              )}
             </li>
           ))
         ) : (

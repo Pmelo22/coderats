@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { db } from "../firebase/firebaseConfig";
-import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  doc,
+  query,
+  where
+} from "firebase/firestore";
 
 interface RankingEntry {
   id: string;
@@ -28,18 +36,27 @@ const RankingPage: React.FC = () => {
   // Função para buscar os rankings na coleção "rankings"
   const fetchRankings = async () => {
     try {
-      const rankingSnapshot = await getDocs(collection(db, "rankings"));
-
-      // Se estiver vazia e houver um usuário logado, cria automaticamente uma entrada
-      if (rankingSnapshot.empty && session?.user) {
+      if (!session?.user?.name) return;
+      
+      // Busca a entrada do usuário
+      const userRankingQuery = query(
+        collection(db, "rankings"),
+        where("username", "==", session.user.name)
+      );
+      const userRankingSnapshot = await getDocs(userRankingQuery);
+      console.log("Resultados da query de ranking para usuário:", userRankingSnapshot.docs);
+      if (userRankingSnapshot.empty) {
+        console.log("Nenhuma entrada encontrada. Criando entrada para o usuário.");
         await addDoc(collection(db, "rankings"), {
-          username: session.user.name || "Usuário desconhecido",
+          username: session.user.name,
           commits: 0,
         });
         // Após criar a entrada, refaz a busca
         return fetchRankings();
       }
 
+      // Busca todas as entradas para exibição
+      const rankingSnapshot = await getDocs(collection(db, "rankings"));
       const rankingList: RankingEntry[] = rankingSnapshot.docs.map((docSnap) => {
         const data = docSnap.data();
         return {
@@ -48,6 +65,7 @@ const RankingPage: React.FC = () => {
           commits: data.commits !== undefined ? data.commits : 0,
         };
       });
+      console.log("Ranking obtido:", rankingList);
       setRanking(rankingList);
     } catch (error) {
       console.error("Erro ao buscar rankings:", error);
@@ -57,22 +75,26 @@ const RankingPage: React.FC = () => {
   // Função para atualizar o número de commits do usuário via API do GitHub
   async function updateCommitCount(username: string, rankingDocId: string) {
     try {
-      // Consulta os eventos do usuário no GitHub e tipa a resposta como um array de GitHubEvent
+      console.log(`Atualizando commits para ${username} no documento ${rankingDocId}`);
+      // Consulta os eventos do usuário no GitHub
       const response = await axios.get<GitHubEvent[]>(`https://api.github.com/users/${username}/events`);
+      console.log("Resposta da API do GitHub:", response.data);
       const events = response.data;
 
-      // Filtra apenas os eventos de push (onde normalmente ocorrem commits)
+      // Filtra apenas os eventos do tipo "PushEvent"
       const pushEvents = events.filter((event) => event.type === "PushEvent");
+      console.log("Push events filtrados:", pushEvents);
 
       // Soma o número de commits de cada PushEvent
       const commitCount = pushEvents.reduce((total: number, event: GitHubEvent) => {
         return total + (event.payload.commits ? event.payload.commits.length : 0);
       }, 0);
+      console.log("Total de commits calculado:", commitCount);
 
       // Atualiza o documento de ranking no Firestore
       const rankingDocRef = doc(db, "rankings", rankingDocId);
       await updateDoc(rankingDocRef, { commits: commitCount });
-      console.log("Commit count updated:", commitCount);
+      console.log("Documento atualizado com commits:", commitCount);
 
       // Refaz a busca para atualizar a lista
       fetchRankings();
@@ -81,9 +103,10 @@ const RankingPage: React.FC = () => {
     }
   }
 
-  // Busca o ranking somente se o usuário estiver autenticado
+  // Busca o ranking sempre que houver uma sessão válida
   useEffect(() => {
     if (session) {
+      console.log("Sessão ativa:", session);
       fetchRankings();
     }
   }, [session]);
@@ -93,7 +116,9 @@ const RankingPage: React.FC = () => {
       {session && (
         <div className="user-info">
           <p>Bem-vindo, {session.user?.name}</p>
-          {session.user?.image && <img src={session.user.image} alt="Avatar" width={50} />}
+          {session.user?.image && (
+            <img src={session.user.image} alt="Avatar" width={50} />
+          )}
         </div>
       )}
 

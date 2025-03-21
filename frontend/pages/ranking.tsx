@@ -15,6 +15,7 @@ import {
 interface RankingEntry {
   id: string;
   username: string;
+  githubUsername?: string;
   commits: number;
 }
 

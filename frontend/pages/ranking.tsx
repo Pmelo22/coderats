@@ -18,45 +18,31 @@ interface RankingEntry {
   commits: number;
 }
 
-// Interface para os eventos retornados pela API do GitHub
-interface GitHubEvent {
-  type: string;
-  payload: {
-    commits?: {
-      message: string;
-    }[];
+interface GitHubRepo {
+  name: string;
+  owner: {
+    login: string;
   };
 }
 
-interface CustomUser {
-  id: string;
-  login: string; // Agora garantimos que `login` existe
-  image?: string; // Adiciona a propriedade 'image'
+interface GitHubCommit {
+  sha: string;
 }
-
-interface CustomSession {
-  user?: CustomUser;
-}
-
 
 const RankingPage: React.FC = () => {
-  const { data: session } = useSession() as { data: CustomSession | null };
+  const { data: session } = useSession();
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
 
-  // Função para buscar os rankings na coleção "rankings"
   const fetchRankings = async () => {
     try {
       if (!session?.user?.login) return;
 
-      // Busca a entrada do usuário
       const userRankingQuery = query(
         collection(db, "rankings"),
         where("username", "==", session.user.login)
       );
       const userRankingSnapshot = await getDocs(userRankingQuery);
-      console.log("Resultados da query de ranking para usuário:", userRankingSnapshot.docs);
       if (userRankingSnapshot.empty) {
-        console.log("Nenhuma entrada encontrada. Criando entrada para o usuário.");
         await addDoc(collection(db, "rankings"), {
           username: session.user.login,
           commits: 0,
@@ -73,52 +59,30 @@ const RankingPage: React.FC = () => {
           commits: data.commits !== undefined ? data.commits : 0,
         };
       });
-      console.log("Ranking obtido:", rankingList);
       setRanking(rankingList);
     } catch (error) {
       console.error("Erro ao buscar rankings:", error);
     }
   };
 
-  // Função para atualizar o número de commits do usuário via API do GitHub
   async function updateCommitCount(username: string, rankingDocId: string) {
     try {
-      console.log(`Atualizando commits para ${username} no documento ${rankingDocId}`);
-  
-      // Obtém o token do ambiente (será usado apenas no servidor)
       const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-  
-      // Adiciona autenticação somente se o token estiver presente
-      const headers = GITHUB_TOKEN
-        ? { Authorization: `Bearer ${GITHUB_TOKEN}` }
-        : {};
-  
-      // Faz a requisição autenticada
-      const response = await axios.get<GitHubEvent[]>(
-        `https://api.github.com/users/${username}/events`,
-        { headers }
-      );
-  
-      console.log("Resposta da API do GitHub:", response.data);
-      const events = response.data;
-  
-      // Filtra apenas os eventos do tipo "PushEvent"
-      const pushEvents = events.filter((event) => event.type === "PushEvent");
-      console.log("Push events filtrados:", pushEvents);
-  
-      // Soma o número de commits de cada PushEvent
-      const commitCount = pushEvents.reduce((total: number, event: GitHubEvent) => {
-        return total + (event.payload.commits ? event.payload.commits.length : 0);
-      }, 0);
-  
-      console.log("Total de commits calculado:", commitCount);
-  
-      // Atualiza o documento de ranking no Firestore
+      const headers = GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {};
+
+      const reposResponse = await axios.get<GitHubRepo[]>(`https://api.github.com/users/${username}/repos`, { headers });
+      const repos = reposResponse.data;
+
+      let totalCommits = 0;
+
+      for (const repo of repos) {
+        const commitsUrl = `https://api.github.com/repos/${repo.owner.login}/${repo.name}/commits?author=${username}`;
+        const commitsResponse = await axios.get<GitHubCommit[]>(commitsUrl, { headers });
+        totalCommits += commitsResponse.data.length;
+      }
+
       const rankingDocRef = doc(db, "rankings", rankingDocId);
-      await updateDoc(rankingDocRef, { commits: commitCount });
-      console.log("Documento atualizado com commits:", commitCount);
-  
-      // Refaz a busca para atualizar a lista
+      await updateDoc(rankingDocRef, { commits: totalCommits });
       fetchRankings();
     } catch (error) {
       console.error("Erro ao atualizar commit count:", error);

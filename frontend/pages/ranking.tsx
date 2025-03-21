@@ -14,11 +14,8 @@ import {
 
 interface RankingEntry {
   id: string;
-<<<<<<< HEAD
-  githubUsername: string;
-=======
   username: string;
->>>>>>> parent of 46a3aef (Update ranking.tsx)
+  githubUsername?: string;
   commits: number;
 }
 
@@ -45,7 +42,7 @@ const RankingPage: React.FC = () => {
       // Busca a entrada do usuário
       const userRankingQuery = query(
         collection(db, "rankings"),
-        where("githubUsername", "==", session.user.name)
+        where("username", "==", session.user.name)
       );
       const userRankingSnapshot = await getDocs(userRankingQuery);
       console.log("Resultados da query de ranking para usuário:", userRankingSnapshot.docs);
@@ -65,7 +62,7 @@ const RankingPage: React.FC = () => {
         const data = docSnap.data();
         return {
           id: docSnap.id,
-          githubUsername: data.username || "Usuário desconhecido",
+          username: data.username || "Usuário desconhecido",
           commits: data.commits !== undefined ? data.commits : 0,
         };
       });
@@ -132,13 +129,13 @@ const RankingPage: React.FC = () => {
           ranking.map((entry, index) => (
             <li key={entry.id} className="ranking-item">
               <span className="position">{index + 1}.</span>
-              <span className="username">{entry.githubUsername}</span>
+              <span className="username">{entry.username}</span>
               <span className="commits">{entry.commits} commits</span>
               {/* Se o usuário logado for o mesmo do ranking, mostra o botão para atualizar */}
-              {session && session.user?.name === entry.githubUsername && (
+              {session && session.user?.name === entry.username && (
                 <button
                   className="update-button"
-                  onClick={() => updateCommitCount(entry.githubUsername, entry.id)}
+                  onClick={() => updateCommitCount(entry.username, entry.id)}
                 >
                   Atualizar Commits
                 </button>

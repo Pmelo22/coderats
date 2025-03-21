@@ -24,38 +24,46 @@ interface GitHubEvent {
   payload: {
     commits?: {
       message: string;
-      // Outros campos se necessário
     }[];
   };
 }
 
+interface CustomUser {
+  id: string;
+  login: string; // Agora garantimos que `login` existe
+  image?: string; // Adiciona a propriedade 'image'
+}
+
+interface CustomSession {
+  user?: CustomUser;
+}
+
+
 const RankingPage: React.FC = () => {
-  const { data: session } = useSession();
+  const { data: session } = useSession() as { data: CustomSession | null };
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
 
   // Função para buscar os rankings na coleção "rankings"
   const fetchRankings = async () => {
     try {
-      if (!session?.user?.name) return;
-      
+      if (!session?.user?.login) return;
+
       // Busca a entrada do usuário
       const userRankingQuery = query(
         collection(db, "rankings"),
-        where("username", "==", session.user.name)
+        where("username", "==", session.user.login)
       );
       const userRankingSnapshot = await getDocs(userRankingQuery);
       console.log("Resultados da query de ranking para usuário:", userRankingSnapshot.docs);
       if (userRankingSnapshot.empty) {
         console.log("Nenhuma entrada encontrada. Criando entrada para o usuário.");
         await addDoc(collection(db, "rankings"), {
-          username: session.user.name,
+          username: session.user.login,
           commits: 0,
         });
-        // Após criar a entrada, refaz a busca
         return fetchRankings();
       }
 
-      // Busca todas as entradas para exibição
       const rankingSnapshot = await getDocs(collection(db, "rankings"));
       const rankingList: RankingEntry[] = rankingSnapshot.docs.map((docSnap) => {
         const data = docSnap.data();
@@ -76,34 +84,48 @@ const RankingPage: React.FC = () => {
   async function updateCommitCount(username: string, rankingDocId: string) {
     try {
       console.log(`Atualizando commits para ${username} no documento ${rankingDocId}`);
-      // Consulta os eventos do usuário no GitHub
-      const response = await axios.get<GitHubEvent[]>(`https://api.github.com/users/${username}/events`);
+  
+      // Obtém o token do ambiente (será usado apenas no servidor)
+      const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+  
+      // Adiciona autenticação somente se o token estiver presente
+      const headers = GITHUB_TOKEN
+        ? { Authorization: `Bearer ${GITHUB_TOKEN}` }
+        : {};
+  
+      // Faz a requisição autenticada
+      const response = await axios.get<GitHubEvent[]>(
+        `https://api.github.com/users/${username}/events`,
+        { headers }
+      );
+  
       console.log("Resposta da API do GitHub:", response.data);
       const events = response.data;
-
+  
       // Filtra apenas os eventos do tipo "PushEvent"
       const pushEvents = events.filter((event) => event.type === "PushEvent");
       console.log("Push events filtrados:", pushEvents);
-
+  
       // Soma o número de commits de cada PushEvent
       const commitCount = pushEvents.reduce((total: number, event: GitHubEvent) => {
         return total + (event.payload.commits ? event.payload.commits.length : 0);
       }, 0);
+  
       console.log("Total de commits calculado:", commitCount);
-
+  
       // Atualiza o documento de ranking no Firestore
       const rankingDocRef = doc(db, "rankings", rankingDocId);
       await updateDoc(rankingDocRef, { commits: commitCount });
       console.log("Documento atualizado com commits:", commitCount);
-
+  
       // Refaz a busca para atualizar a lista
       fetchRankings();
     } catch (error) {
       console.error("Erro ao atualizar commit count:", error);
     }
   }
+  
 
-  // Busca o ranking sempre que houver uma sessão válida
   useEffect(() => {
     if (session) {
       console.log("Sessão ativa:", session);
@@ -115,7 +137,7 @@ const RankingPage: React.FC = () => {
     <div className="container">
       {session && (
         <div className="user-info">
-          <p>Bem-vindo, {session.user?.name}</p>
+          <p>Bem-vindo, {session.user?.login}</p>
           {session.user?.image && (
             <img src={session.user.image} alt="Avatar" width={50} />
           )}
@@ -130,8 +152,7 @@ const RankingPage: React.FC = () => {
               <span className="position">{index + 1}.</span>
               <span className="username">{entry.username}</span>
               <span className="commits">{entry.commits} commits</span>
-              {/* Se o usuário logado for o mesmo do ranking, mostra o botão para atualizar */}
-              {session && session.user?.name === entry.username && (
+              {session && session.user?.login === entry.username && (
                 <button
                   className="update-button"
                   onClick={() => updateCommitCount(entry.username, entry.id)}
@@ -147,12 +168,10 @@ const RankingPage: React.FC = () => {
       </ul>
 
       <style jsx>{`
-        /* Estilos globais em dark mode */
         .container {
           background-color: #121212;
           color: #ffffff;
           font-family: "Arial", sans-serif;
-          margin: 0;
           padding: 2rem;
           display: flex;
           flex-direction: column;
@@ -161,16 +180,10 @@ const RankingPage: React.FC = () => {
           text-align: center;
         }
 
-        /* Seção de informações do usuário */
         .user-info {
           margin-bottom: 2rem;
         }
 
-        .user-info p {
-          margin: 0.5rem 0;
-        }
-
-        /* Estilo do título */
         h1 {
           font-size: 2.5rem;
           font-weight: bold;
@@ -178,7 +191,6 @@ const RankingPage: React.FC = () => {
           color: #00e6e6;
         }
 
-        /* Estilo da lista de ranking */
         .ranking-list {
           list-style: none;
           padding: 0;
@@ -195,17 +207,12 @@ const RankingPage: React.FC = () => {
           flex-wrap: wrap;
           align-items: center;
           font-size: 1.2rem;
-          transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
           justify-content: space-between;
         }
 
         .ranking-item:hover {
           background-color: #2a2a2a;
           transform: scale(1.02);
-        }
-
-        .position {
-          margin-right: 10px;
         }
 
         .commits {
@@ -223,7 +230,6 @@ const RankingPage: React.FC = () => {
           border-radius: 6px;
           cursor: pointer;
           margin-top: 8px;
-          transition: all 0.3s ease-in-out;
         }
 
         .update-button:hover {

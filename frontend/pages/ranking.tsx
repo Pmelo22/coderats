@@ -84,19 +84,47 @@ const RankingPage: React.FC = () => {
   async function updateCommitCount(username: string, rankingDocId: string) {
     try {
       console.log(`Atualizando commits para ${username} no documento ${rankingDocId}`);
-      const response = await axios.get<GitHubEvent[]>(`https://api.github.com/users/${username}/events`);
+  
+      // Token de autenticação (adicione no .env.local e carregue com process.env)
+      const GITHUB_TOKEN = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
+  
+      // Configuração da requisição com autenticação
+      const headers = GITHUB_TOKEN
+        ? { Authorization: `token ${GITHUB_TOKEN}` }
+        : {};
+  
+      // Consulta os eventos do usuário no GitHub
+      const response = await axios.get<GitHubEvent[]>(
+        `https://api.github.com/users/${username}/events`,
+        { headers }
+      );
+  
+      console.log("Resposta da API do GitHub:", response.data);
       const events = response.data;
+  
+      // Filtra apenas os eventos do tipo "PushEvent"
       const pushEvents = events.filter((event) => event.type === "PushEvent");
+      console.log("Push events filtrados:", pushEvents);
+  
+      // Soma o número de commits de cada PushEvent
       const commitCount = pushEvents.reduce((total: number, event: GitHubEvent) => {
         return total + (event.payload.commits ? event.payload.commits.length : 0);
       }, 0);
+  
+      console.log("Total de commits calculado:", commitCount);
+  
+      // Atualiza o documento de ranking no Firestore
       const rankingDocRef = doc(db, "rankings", rankingDocId);
       await updateDoc(rankingDocRef, { commits: commitCount });
+      console.log("Documento atualizado com commits:", commitCount);
+  
+      // Refaz a busca para atualizar a lista
       fetchRankings();
     } catch (error) {
       console.error("Erro ao atualizar commit count:", error);
     }
   }
+  
 
   useEffect(() => {
     if (session) {

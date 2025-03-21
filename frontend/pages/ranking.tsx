@@ -14,7 +14,11 @@ import {
 
 interface RankingEntry {
   id: string;
+<<<<<<< HEAD
   githubUsername: string;
+=======
+  username: string;
+>>>>>>> parent of 46a3aef (Update ranking.tsx)
   commits: number;
 }
 

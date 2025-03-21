@@ -1,12 +1,24 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import axios from "axios";
 import { db } from "../firebase/firebaseConfig";
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 
 interface RankingEntry {
   id: string;
   username: string;
   commits: number;
+}
+
+// Interface para os eventos retornados pela API do GitHub
+interface GitHubEvent {
+  type: string;
+  payload: {
+    commits?: {
+      message: string;
+      // Outros campos se necessário
+    }[];
+  };
 }
 
 const RankingPage: React.FC = () => {
@@ -17,7 +29,7 @@ const RankingPage: React.FC = () => {
   const fetchRankings = async () => {
     try {
       const rankingSnapshot = await getDocs(collection(db, "rankings"));
-      
+
       // Se estiver vazia e houver um usuário logado, cria automaticamente uma entrada
       if (rankingSnapshot.empty && session?.user) {
         await addDoc(collection(db, "rankings"), {
@@ -28,10 +40,10 @@ const RankingPage: React.FC = () => {
         return fetchRankings();
       }
 
-      const rankingList: RankingEntry[] = rankingSnapshot.docs.map((doc) => {
-        const data = doc.data();
+      const rankingList: RankingEntry[] = rankingSnapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
         return {
-          id: doc.id,
+          id: docSnap.id,
           username: data.username || "Usuário desconhecido",
           commits: data.commits !== undefined ? data.commits : 0,
         };
@@ -41,6 +53,33 @@ const RankingPage: React.FC = () => {
       console.error("Erro ao buscar rankings:", error);
     }
   };
+
+  // Função para atualizar o número de commits do usuário via API do GitHub
+  async function updateCommitCount(username: string, rankingDocId: string) {
+    try {
+      // Consulta os eventos do usuário no GitHub e tipa a resposta como um array de GitHubEvent
+      const response = await axios.get<GitHubEvent[]>(`https://api.github.com/users/${username}/events`);
+      const events = response.data;
+
+      // Filtra apenas os eventos de push (onde normalmente ocorrem commits)
+      const pushEvents = events.filter((event) => event.type === "PushEvent");
+
+      // Soma o número de commits de cada PushEvent
+      const commitCount = pushEvents.reduce((total: number, event: GitHubEvent) => {
+        return total + (event.payload.commits ? event.payload.commits.length : 0);
+      }, 0);
+
+      // Atualiza o documento de ranking no Firestore
+      const rankingDocRef = doc(db, "rankings", rankingDocId);
+      await updateDoc(rankingDocRef, { commits: commitCount });
+      console.log("Commit count updated:", commitCount);
+
+      // Refaz a busca para atualizar a lista
+      fetchRankings();
+    } catch (error) {
+      console.error("Erro ao atualizar commit count:", error);
+    }
+  }
 
   // Busca o ranking somente se o usuário estiver autenticado
   useEffect(() => {
@@ -54,9 +93,7 @@ const RankingPage: React.FC = () => {
       {session && (
         <div className="user-info">
           <p>Bem-vindo, {session.user?.name}</p>
-          {session.user?.image && (
-            <img src={session.user.image} alt="Avatar" width={50} />
-          )}
+          {session.user?.image && <img src={session.user.image} alt="Avatar" width={50} />}
         </div>
       )}
 
@@ -68,6 +105,15 @@ const RankingPage: React.FC = () => {
               <span className="position">{index + 1}.</span>
               <span className="username">{entry.username}</span>
               <span className="commits">{entry.commits} commits</span>
+              {/* Se o usuário logado for o mesmo do ranking, mostra o botão para atualizar */}
+              {session && session.user?.name === entry.username && (
+                <button
+                  className="update-button"
+                  onClick={() => updateCommitCount(entry.username, entry.id)}
+                >
+                  Atualizar Commits
+                </button>
+              )}
             </li>
           ))
         ) : (
@@ -121,10 +167,11 @@ const RankingPage: React.FC = () => {
           padding: 16px;
           border-radius: 8px;
           display: flex;
-          justify-content: space-between;
+          flex-wrap: wrap;
           align-items: center;
           font-size: 1.2rem;
           transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+          justify-content: space-between;
         }
 
         .ranking-item:hover {
@@ -139,6 +186,24 @@ const RankingPage: React.FC = () => {
         .commits {
           font-weight: bold;
           color: #00e6e6;
+        }
+
+        .update-button {
+          background-color: #00e6e6;
+          color: #121212;
+          border: none;
+          padding: 8px 12px;
+          font-size: 1rem;
+          font-weight: bold;
+          border-radius: 6px;
+          cursor: pointer;
+          margin-top: 8px;
+          transition: all 0.3s ease-in-out;
+        }
+
+        .update-button:hover {
+          background-color: #00cccc;
+          transform: scale(1.05);
         }
       `}</style>
     </div>

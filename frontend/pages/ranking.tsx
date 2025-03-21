@@ -69,16 +69,41 @@ const RankingPage: React.FC = () => {
     try {
       const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
       const headers = GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {};
+      const perPage = 100;
+      let repos: GitHubRepo[] = [];
+      let page = 1;
 
-      const reposResponse = await axios.get<GitHubRepo[]>(`https://api.github.com/users/${username}/repos`, { headers });
-      const repos = reposResponse.data;
+      while (true) {
+        const reposResponse = await axios.get<GitHubRepo[]>(
+          `https://api.github.com/users/${username}/repos?per_page=${perPage}&page=${page}`,
+          { headers }
+        );
+        const reposPage = reposResponse.data;
+        if (!reposPage.length) break;
+        repos = repos.concat(reposPage);
+        if (reposPage.length < perPage) break;
+        page++;
+      }
+
+      console.log(`Total de repositórios encontrados para ${username}:`, repos.length);
 
       let totalCommits = 0;
 
       for (const repo of repos) {
-        const commitsUrl = `https://api.github.com/repos/${repo.owner.login}/${repo.name}/commits?author=${username}`;
-        const commitsResponse = await axios.get<GitHubCommit[]>(commitsUrl, { headers });
-        totalCommits += commitsResponse.data.length;
+        let repoCommits = 0;
+        let commitsPage = 1;
+
+        while (true) {
+          const commitsResponse = await axios.get<GitHubCommit[]>(
+            `https://api.github.com/repos/${repo.owner.login}/${repo.name}/commits?author=${username}&per_page=${perPage}&page=${commitsPage}`,
+            { headers }
+          );
+          const commits = commitsResponse.data;
+          repoCommits += commits.length;
+          if (commits.length < perPage) break;
+          commitsPage++;
+        }
+        totalCommits += repoCommits;
       }
 
       const rankingDocRef = doc(db, "rankings", rankingDocId);
@@ -88,7 +113,6 @@ const RankingPage: React.FC = () => {
       console.error("Erro ao atualizar commit count:", error);
     }
   }
-  
 
   useEffect(() => {
     if (session) {

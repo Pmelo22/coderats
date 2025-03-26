@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
-import "../styles/globals.css";
 import { db } from "../firebase/firebaseConfig";
 import {
   collection,

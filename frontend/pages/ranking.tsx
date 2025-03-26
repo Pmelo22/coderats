@@ -77,18 +77,8 @@ const RankingPage: React.FC = () => {
 
       for (const repo of repos) {
         const commitsUrl = `https://api.github.com/repos/${repo.owner.login}/${repo.name}/commits?author=${username}`;
-
-        try {
-          const commitsResponse = await axios.get<GitHubCommit[]>(commitsUrl, { headers });
-          totalCommits += commitsResponse.data.length;
-        } catch (error: any) {
-          if (error.response?.status === 409) {
-            console.warn(`Conflito ao buscar commits para ${repo.name}. Pode ser um repositório vazio.`);
-            continue; // Pula este repositório
-          } else {
-            console.error(`Erro ao buscar commits de ${repo.name}:`, error.message);
-          }
-        }
+        const commitsResponse = await axios.get<GitHubCommit[]>(commitsUrl, { headers });
+        totalCommits += commitsResponse.data.length;
       }
 
       const rankingDocRef = doc(db, "rankings", rankingDocId);
@@ -98,7 +88,6 @@ const RankingPage: React.FC = () => {
       console.error("Erro ao atualizar commit count:", error);
     }
   }
-
 
   useEffect(() => {
     if (session) {

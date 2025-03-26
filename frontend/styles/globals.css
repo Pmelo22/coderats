@@ -1,6 +1,5 @@
 body {
-  background-color: #1e1e1e;
-  /* Cinza escuro mais claro para visibilidade da logo */
+  background-color: #1e1e1e; /* Cinza escuro mais claro para visibilidade da logo */
   color: #ffffff;
   font-family: "Arial", sans-serif;
   margin: 0;
@@ -18,13 +17,10 @@ body {
   position: absolute;
   top: 20px;
   left: 20px;
-  display: flex;
-  align-items: center;
 }
 
 .logo {
-  width: 200px;
-  /* Ajuste conforme necessário */
+  width: 120px;
   height: auto;
 }
 

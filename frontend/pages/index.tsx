@@ -1,7 +1,9 @@
 import { useEffect } from "react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import "../styles/globals.css"; // Importando estilos globais
+import Image from 'next/image'
+
 
 export default function Home() {
   const { data: session } = useSession();
@@ -17,7 +19,7 @@ export default function Home() {
   return (
     <div className="container">
       <header className="header">
-        <img className="logo" src="/logo.png" alt="Logo Coderats" />
+      <Image src="/logo.png" alt="Logo" width={200} height={200} />
       </header>
       <main className="main-content">
         <h1>Coderats 🚀</h1>

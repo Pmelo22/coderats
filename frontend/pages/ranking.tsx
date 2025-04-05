@@ -9,7 +9,7 @@ import {
   updateDoc,
   doc,
   query,
-  where
+  where,
 } from "firebase/firestore";
 
 interface RankingEntry {
@@ -33,67 +33,101 @@ const RankingPage: React.FC = () => {
   const { data: session } = useSession();
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
 
-  const fetchRankings = async () => {
+  // Responsável por buscar (ou criar) o ranking de todos os usuários
+  // e retornar a lista para que possamos atualizá-la posteriormente.
+  const fetchRankings = async (): Promise<RankingEntry[]> => {
     try {
-      if (!session?.user?.login) return;
+      // Se não existir session ou session.user.login, aborta
+      if (!session?.user?.login) return [];
 
+      // Verifica se o usuário logado já existe no "rankings"
       const userRankingQuery = query(
         collection(db, "rankings"),
         where("username", "==", session.user.login)
       );
       const userRankingSnapshot = await getDocs(userRankingQuery);
+
+      // Se o usuário ainda não foi cadastrado, cria-o
       if (userRankingSnapshot.empty) {
         await addDoc(collection(db, "rankings"), {
           username: session.user.login,
           commits: 0,
         });
-        return fetchRankings();
       }
 
+      // Busca todos os documentos de ranking
       const rankingSnapshot = await getDocs(collection(db, "rankings"));
       const rankingList: RankingEntry[] = rankingSnapshot.docs.map((docSnap) => {
         const data = docSnap.data();
         return {
           id: docSnap.id,
           username: data.username || "Usuário desconhecido",
-          commits: data.commits !== undefined ? data.commits : 0,
+          commits: data.commits ?? 0,
         };
       });
+
+      // Ordena do maior para o menor número de commits
+      rankingList.sort((a, b) => b.commits - a.commits);
+
+      // Atualiza o estado local
       setRanking(rankingList);
+
+      // Retorna a lista atualizada para uso posterior
+      return rankingList;
     } catch (error) {
       console.error("Erro ao buscar rankings:", error);
+      return [];
     }
   };
 
-  async function updateCommitCount(username: string, rankingDocId: string) {
+  // Atualiza a contagem de commits no Firestore
+  const updateCommitCount = async (username: string, rankingDocId: string) => {
     try {
+      // GITHUB_TOKEN definido no .env
       const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-      const headers = GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {};
+      const headers = GITHUB_TOKEN
+        ? { Authorization: `Bearer ${GITHUB_TOKEN}` }
+        : {};
 
-      const reposResponse = await axios.get<GitHubRepo[]>(`https://api.github.com/users/${username}/repos`, { headers });
+      // 1. Buscar todos os repositórios do usuário
+      const reposResponse = await axios.get<GitHubRepo[]>(
+        `https://api.github.com/users/${username}/repos`,
+        { headers }
+      );
       const repos = reposResponse.data;
 
+      // 2. Somar o total de commits desse usuário em cada repositório
       let totalCommits = 0;
-
       for (const repo of repos) {
+        // Filtra por autor = username
         const commitsUrl = `https://api.github.com/repos/${repo.owner.login}/${repo.name}/commits?author=${username}`;
-        const commitsResponse = await axios.get<GitHubCommit[]>(commitsUrl, { headers });
+        const commitsResponse = await axios.get<GitHubCommit[]>(commitsUrl, {
+          headers,
+        });
         totalCommits += commitsResponse.data.length;
       }
 
+      // 3. Atualizar o doc no Firestore
       const rankingDocRef = doc(db, "rankings", rankingDocId);
       await updateDoc(rankingDocRef, { commits: totalCommits });
-      fetchRankings();
     } catch (error) {
       console.error("Erro ao atualizar commit count:", error);
     }
-  }
+  };
 
   useEffect(() => {
+    // Quando a session estiver disponível, busca o ranking
+    // e, em seguida, atualiza os commits de cada usuário.
     if (session) {
-      fetchRankings().then(() => {
-        ranking.forEach((entry) => updateCommitCount(entry.username, entry.id));
-      });
+      (async () => {
+        const rankingList = await fetchRankings();
+        // Para cada usuário, chama updateCommitCount
+        for (const entry of rankingList) {
+          await updateCommitCount(entry.username, entry.id);
+        }
+        // Após atualizar todos, busca o ranking novamente para refletir as mudanças
+        await fetchRankings();
+      })();
     }
   }, [session]);
 
@@ -119,7 +153,10 @@ const RankingPage: React.FC = () => {
               {session && session.user?.login === entry.username && (
                 <button
                   className="update-button"
-                  onClick={() => updateCommitCount(entry.username, entry.id)}
+                  onClick={async () => {
+                    await updateCommitCount(entry.username, entry.id);
+                    await fetchRankings(); // Recarrega ranking para exibir commits atualizados
+                  }}
                 >
                   Atualizar Commits
                 </button>

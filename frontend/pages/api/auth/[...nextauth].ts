@@ -1,29 +1,28 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
-import GitHubProvider from "next-auth/providers/github";
+// [...nextauth].ts
+import NextAuth from "next-auth";
+import GithubProvider from "next-auth/providers/github";
 
-export const authOptions: NextAuthOptions = {
+export default NextAuth({
   providers: [
-    GitHubProvider({
+    GithubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     }),
   ],
-  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async jwt({ token, profile }) {
-      if (profile && "login" in profile) {
-        token.login = profile.login as string; // Captura o login corretamente
+    async jwt({ token, account, profile }) {
+      // Quando é feito login com GitHub, o "profile" contém dados do usuário
+      if (account?.provider === "github") {
+        token.login = (profile as { login?: string })?.login;  // <- Armazenando o login do GitHub no token JWT
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub!;
-        session.user.login = token.login as string; // Garante que o login seja passado corretamente
+      // Passando "token.login" para "session.user.login"
+      if (token?.login) {
+        session.user.login = token.login as string;
       }
       return session;
     },
   },
-};
-
-export default NextAuth(authOptions);
+});

@@ -3,7 +3,7 @@
 ## Descrição
 Coderats é um projeto incrível que visa resolver problemas complexos de forma eficiente e elegante.
 
-## Funcionalidades
+## Funcionalidadess
 - Resolução de problemas complexos
 - Interface amigável
 - Alta performance

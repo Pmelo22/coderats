@@ -4,56 +4,23 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { ArrowUpRight, Trophy, GitCommitHorizontal, GitPullRequestIcon, GitForkIcon, Code, Users } from "lucide-react"
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { getLeaderboard } from "@/lib/firestore-user"
 import RankingNote from "./note"
 import RankingCriteria from "./criteria"
-
-async function getLeaderboard() {
-  const supabase = createServerSupabaseClient()
-
-  // Get leaderboard data
-  const { data: leaderboard, error } = await supabase
-    .from("leaderboard")
-    .select("*")
-    .order("rank", { ascending: true })
-    .limit(100)
-
-  if (error) {
-    console.error("Error fetching leaderboard:", error)
-    return { users: [], lastUpdated: new Date().toISOString() }
-  }
-
-  // Get last update time
-  const { data: lastUpdate } = await supabase
-    .from("contributions")
-    .select("updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .single()
-
-  // Get ranking scores
-  const { data: rankings } = await supabase.from("rankings").select("user_id, score").eq("period", "all_time")
-
-  // Merge scores into leaderboard data
-  const usersWithScores =
-    leaderboard?.map((user) => {
-      const userRanking = rankings?.find((r) => r.user_id === user.id)
-      return {
-        ...user,
-        score: userRanking?.score || 0,
-      }
-    }) || []
-
-  return {
-    users: usersWithScores,
-    lastUpdated: lastUpdate?.updated_at || new Date().toISOString(),
-  }
-}
 
 export const revalidate = 0 // Disable cache for this page
 
 export default async function RankingPage() {
-  const { users, lastUpdated } = await getLeaderboard()
+  // Busca o ranking e a última atualização usando a função utilitária
+  const { users, lastUpdated } = await (async () => {
+    const leaderboard = await getLeaderboard()
+    // Busca a última atualização (pode ser melhorado para buscar do Firestore)
+    let lastUpdated = new Date().toISOString()
+    if (leaderboard.length > 0 && leaderboard[0].updated_at) {
+      lastUpdated = leaderboard[0].updated_at
+    }
+    return { users: leaderboard, lastUpdated }
+  })()
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 py-8">

@@ -12,14 +12,13 @@ A web application that ranks GitHub users based on their contributions, built wi
 ## Prerequisites
 
 - Node.js 18+ and npm
-- Supabase account
 - GitHub OAuth application
 
 ## Environment Variables
 
 Create a `.env.local` file in the root directory with the following variables:
 
-\`\`\`env
+```env
 # GitHub OAuth
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
@@ -36,22 +35,25 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Cron job secret
 CRON_SECRET_KEY=your_cron_secret_key
-\`\`\`
+```
+
+# Firebase
+As variáveis de ambiente do Firebase estão em `.env.local`.
 
 ## Installation
 
 1. Clone the repository
 2. Install dependencies:
 
-\`\`\`bash
+```bash
 npm install
-\`\`\`
+```
 
 3. Run the development server:
 
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
@@ -65,7 +67,7 @@ If you're deploying to Vercel, you can use Vercel Cron Jobs:
 
 1. Create a `vercel.json` file in the root directory:
 
-\`\`\`json
+```json
 {
   "crons": [
     {
@@ -74,7 +76,7 @@ If you're deploying to Vercel, you can use Vercel Cron Jobs:
     }
   ]
 }
-\`\`\`
+```
 
 2. Make sure to add the `CRON_SECRET_KEY` environment variable to your Vercel project.
 
@@ -97,6 +99,3 @@ If you're not using Vercel, you can use an external cron service like [Cron-job.
 ## License
 
 MIT
-\`\`\`
-
-Let's create a vercel.json file to set up the cron job:

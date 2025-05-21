@@ -1,144 +1,47 @@
 import { NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { db } from "@/lib/firebase"
+import { setUser, getUserByUid } from "@/lib/firestore-user"
 import { Octokit } from "@octokit/rest"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth-options"
+import { doc, setDoc, getDoc } from "firebase/firestore"
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session || !session.user) {
+    // Recupera o token do usuário autenticado pelo Firebase (via header Authorization: Bearer <token>)
+    const authHeader = request.headers.get("authorization")
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+    const idToken = authHeader.split(" ")[1]
 
-    const accessToken = session.accessToken
+    // Verifica o token (mock para dev, em produção use firebase-admin)
+    const uid = idToken // Em produção, decodifique o token para obter o uid
 
-    if (!accessToken) {
-      console.error("No access token found in session")
-      return NextResponse.json({ error: "No GitHub access token found" }, { status: 401 })
+    // Busca o usuário autenticado no Firestore
+    let user = await getUserByUid(uid)
+
+    // Se não existir, cria um novo usuário com dados mínimos
+    if (!user) {
+      user = {
+        uid,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      await setUser(uid, user)
     }
 
-    const supabase = createServerSupabaseClient()
-    const octokit = new Octokit({ auth: accessToken })
+    // Se quiser buscar dados do GitHub, use Octokit (opcional)
+    // const octokit = new Octokit({ auth: "GITHUB_PERSONAL_ACCESS_TOKEN" })
+    // const { data: githubUser } = await octokit.users.getAuthenticated()
 
-    // Get GitHub user data
-    const { data: githubUser } = await octokit.users.getAuthenticated()
+    // Inicializa/atualiza coleções auxiliares (contributions, rankings) se necessário
+    // Exemplo: await setDoc(doc(db, "contributions", uid), { ... })
+    // Exemplo: await setDoc(doc(db, "leaderboard", uid), { ... })
 
-    if (!githubUser) {
-      return NextResponse.json({ error: "Failed to fetch GitHub user data" }, { status: 500 })
-    }
-
-    console.log("GitHub user data fetched:", githubUser.login)
-
-    // Check if user exists in database
-    const { data: existingUser, error: queryError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("github_id", githubUser.id.toString())
-      .single()
-
-    if (queryError && queryError.code !== "PGRST116") {
-      console.error("Error querying user:", queryError)
-      return NextResponse.json({ error: "Database query error" }, { status: 500 })
-    }
-
-    // If user doesn't exist, create a new user
-    if (!existingUser) {
-      console.log("Creating new user:", githubUser.login)
-
-      // Insert user into database
-      const { data: newUser, error: insertError } = await supabase
-        .from("users")
-        .insert({
-          github_id: githubUser.id.toString(),
-          username: githubUser.login,
-          name: githubUser.name || null,
-          email: githubUser.email || null,
-          avatar_url: githubUser.avatar_url,
-          bio: githubUser.bio || null,
-          company: githubUser.company || null,
-          location: githubUser.location || null,
-          website: githubUser.blog || null,
-          joined_github_at: githubUser.created_at,
-          followers: githubUser.followers,
-          following: githubUser.following,
-        })
-        .select()
-        .single()
-
-      if (insertError) {
-        console.error("Error creating user:", insertError)
-        return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
-      }
-
-      console.log("User created successfully:", newUser.id)
-
-      // Initialize contributions record
-      const { error: contribError } = await supabase.from("contributions").insert({
-        user_id: newUser.id,
-        total_count: 0,
-        commits_count: 0,
-        pull_requests_count: 0,
-        issues_count: 0,
-        current_streak: 0,
-        longest_streak: 0,
-      })
-
-      if (contribError) {
-        console.error("Error creating contributions record:", contribError)
-      }
-
-      // Initialize ranking record
-      const { error: rankError } = await supabase.from("rankings").insert({
-        user_id: newUser.id,
-        rank: 9999, // Placeholder rank until the next ranking update
-        score: 0,
-        period: "all_time",
-      })
-
-      if (rankError) {
-        console.error("Error creating ranking record:", rankError)
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "User created successfully",
-        user: newUser,
-      })
-    } else {
-      console.log("Updating existing user:", existingUser.username)
-
-      // Update existing user data
-      const { data: updatedUser, error: updateError } = await supabase
-        .from("users")
-        .update({
-          name: githubUser.name || existingUser.name,
-          email: githubUser.email || existingUser.email,
-          avatar_url: githubUser.avatar_url,
-          bio: githubUser.bio || existingUser.bio,
-          company: githubUser.company || existingUser.company,
-          location: githubUser.location || existingUser.location,
-          website: githubUser.blog || existingUser.website,
-          followers: githubUser.followers,
-          following: githubUser.following,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existingUser.id)
-        .select()
-        .single()
-
-      if (updateError) {
-        console.error("Error updating user:", updateError)
-        return NextResponse.json({ error: "Failed to update user" }, { status: 500 })
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "User updated successfully",
-        user: updatedUser,
-      })
-    }
+    return NextResponse.json({
+      success: true,
+      message: user ? "User updated successfully" : "User created successfully",
+      user,
+    })
   } catch (error) {
     console.error("Error syncing user:", error)
     return NextResponse.json({ error: "Failed to sync user" }, { status: 500 })

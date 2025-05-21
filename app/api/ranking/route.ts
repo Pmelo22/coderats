@@ -1,32 +1,18 @@
 import { NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { getLeaderboard } from "@/lib/firestore-user"
+
+// TODO: Migrar esta rota para buscar ranking do Firestore.
+// Veja lib/firestore-user.ts para funções auxiliares.
 
 export async function GET() {
   try {
-    const supabase = createServerSupabaseClient()
-
-    // Get leaderboard data
-    const { data: leaderboard, error } = await supabase
-      .from("leaderboard")
-      .select("*")
-      .order("rank", { ascending: true })
-      .limit(100)
-
-    if (error) {
-      throw error
-    }
-
-    // Get last update time
-    const { data: lastUpdate } = await supabase
-      .from("contributions")
-      .select("updated_at")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .single()
-
+    // Busca o ranking no Firestore
+    const leaderboard = await getLeaderboard()
+    // Para lastUpdated, você pode buscar de uma collection ou usar a data atual
+    const lastUpdated = new Date().toISOString()
     return NextResponse.json({
       users: leaderboard || [],
-      lastUpdated: lastUpdate?.updated_at || new Date().toISOString(),
+      lastUpdated,
     })
   } catch (error) {
     console.error("Error fetching ranking:", error)

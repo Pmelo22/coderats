@@ -1,5 +1,6 @@
 // This is a placeholder for the actual GitHub OAuth implementation
 // In a real application, you would use NextAuth.js or a similar library
+// Atualize este arquivo para usar o Firebase Auth se necessário, ou remova se não for mais usado.
 
 export async function signIn() {
   // Redirect to GitHub OAuth flow

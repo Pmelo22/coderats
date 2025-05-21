@@ -2,19 +2,21 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { useSession } from "next-auth/react"
+// import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import LoginButton from "@/components/login-button"
+import { useFirebaseAuth } from "@/components/firebase-session-provider"
 
 export default function HomePage() {
-  const { data: session, status } = useSession()
+  // const { data: session, status } = useSession()
+  const { user, loading } = useFirebaseAuth()
   const router = useRouter()
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "success" | "error">("idle")
 
   useEffect(() => {
     // If user is authenticated, sync user data with Supabase
-    if (status === "authenticated" && session && syncStatus === "idle") {
+    if (!loading && user && syncStatus === "idle") {
       setSyncStatus("syncing")
 
       fetch("/api/auth/sync-user", {
@@ -65,7 +67,7 @@ export default function HomePage() {
           setSyncStatus("error")
         })
     }
-  }, [status, session, router, syncStatus])
+  }, [loading, user, router, syncStatus])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4">
@@ -76,7 +78,7 @@ export default function HomePage() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-          {status === "authenticated" ? (
+          {user ? (
             <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 text-lg" asChild>
               <Link href="/profile">View Your Profile</Link>
             </Button>

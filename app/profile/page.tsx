@@ -1,6 +1,5 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -21,152 +20,70 @@ import {
   Users,
   AlertTriangle,
 } from "lucide-react"
-import { createClientSupabaseClient } from "@/lib/supabase"
 import ScoreRecommendations from "@/components/score-recommendations"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 // Adicionar a importação do botão de sincronização forçada
 import ForceSyncButton from "@/components/force-sync-button"
+import { useFirebaseAuth } from "@/components/firebase-session-provider"
 
 export default function UserProfilePage() {
-  const { data: session, status } = useSession()
+  const { user, loading } = useFirebaseAuth()
   const router = useRouter()
   const [userData, setUserData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>(null)
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!loading && !user) {
       router.push("/")
     }
 
-    if (status === "authenticated" && session?.user?.name) {
+    if (!loading && user?.displayName) {
       fetchUserData()
     }
-  }, [status, session, router])
+  }, [loading, user, router])
 
   const fetchUserData = async () => {
-    if (!session?.user?.name) return
+    if (!user?.displayName) return
 
     try {
-      setLoading(true)
       setError(null)
-      console.log("Fetching user data for:", session.user.name)
+      console.log("Fetching user data for:", user.displayName)
 
-      // Primeiro, buscar o usuário do Supabase diretamente
-      const supabase = createClientSupabaseClient()
+      // TODO: Migrar toda a lógica de busca de dados do usuário para Firestore/Firebase.
+      // Use os utilitários de lib/firestore-user.ts para buscar dados do usuário, contribuições e ranking.
 
       // Armazenar informações de debug
       const debugData: any = {
-        username: session.user.name,
-        sessionStatus: status,
+        username: user.displayName,
+        sessionStatus: !loading ? "authenticated" : "loading",
         timestamp: new Date().toISOString(),
       }
 
       // Verificar se o usuário existe no banco de dados
-      const { data: userData, error: supabaseError } = await supabase
-        .from("users")
-        .select(`
-          *,
-          contributions(*),
-          rankings(*)
-        `)
-        .eq("username", session.user.name)
-        .single()
+      // TODO: Implementar a busca real via Firestore
+      const userData = null // Placeholder
 
       debugData.userQueryResult = userData ? "Found" : "Not found"
-      debugData.userQueryError = supabaseError ? supabaseError.message : null
-
-      if (supabaseError) {
-        console.error("Erro ao buscar usuário do Supabase:", supabaseError)
-
-        // Se o usuário não for encontrado, tentar sincronizar os dados
-        if (supabaseError.code === "PGRST116") {
-          console.log("Usuário não encontrado, tentando sincronizar dados...")
-          debugData.attemptingSync = true
-
-          // Chamar a API para sincronizar o usuário
-          const syncResponse = await fetch("/api/auth/sync-user", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          })
-
-          debugData.syncResponseStatus = syncResponse.status
-
-          if (!syncResponse.ok) {
-            throw new Error(`Falha ao sincronizar usuário: ${syncResponse.status}`)
-          }
-
-          const syncData = await syncResponse.json()
-          debugData.syncResult = syncData.success ? "Success" : "Failed"
-
-          if (syncData.success) {
-            console.log("Usuário sincronizado com sucesso, buscando dados novamente...")
-
-            // Buscar o usuário novamente após a sincronização
-            const { data: refreshedUser, error: refreshError } = await supabase
-              .from("users")
-              .select(`
-                *,
-                contributions(*),
-                rankings(*)
-              `)
-              .eq("username", session.user.name)
-              .single()
-
-            debugData.refreshedUserFound = refreshedUser ? true : false
-            debugData.refreshError = refreshError ? refreshError.message : null
-
-            if (refreshError) {
-              throw new Error(`Erro ao buscar usuário após sincronização: ${refreshError.message}`)
-            }
-
-            if (!refreshedUser) {
-              throw new Error("Usuário não encontrado mesmo após sincronização")
-            }
-
-            // Continuar com o usuário sincronizado
-            setUserData(formatUserData(refreshedUser, [], []))
-            setLoading(false)
-            setDebugInfo(debugData)
-            return
-          } else {
-            throw new Error("Falha ao sincronizar usuário")
-          }
-        } else {
-          throw new Error(`Erro ao buscar usuário: ${supabaseError.message}`)
-        }
-      }
 
       if (!userData) {
         setError("Usuário não encontrado. Por favor, faça login novamente.")
-        setLoading(false)
         setDebugInfo(debugData)
         return
       }
 
       // Buscar repositórios
-      const { data: repositories, error: repoError } = await supabase
-        .from("repositories")
-        .select("*")
-        .eq("user_id", userData.id)
-        .order("stars_count", { ascending: false })
+      // TODO: Implementar a busca real via Firestore
+      const repositories: any[] = [] // Placeholder
 
       debugData.repositoriesFound = repositories ? repositories.length : 0
-      debugData.repoError = repoError ? repoError.message : null
 
       // Buscar histórico de contribuições
-      const { data: contributionHistory, error: historyError } = await supabase
-        .from("contribution_history")
-        .select("*")
-        .eq("user_id", userData.id)
-        .order("date", { ascending: true })
+      // TODO: Implementar a busca real via Firestore
+      const contributionHistory: any[] = [] // Placeholder
 
       debugData.contributionHistoryFound = contributionHistory ? contributionHistory.length : 0
-      debugData.historyError = historyError ? historyError.message : null
 
       // Formatar os dados
       const formattedData = formatUserData(userData, repositories || [], contributionHistory || [])
@@ -180,8 +97,6 @@ export default function UserProfilePage() {
         finalError: error.message,
         errorStack: error.stack,
       })
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -209,7 +124,7 @@ export default function UserProfilePage() {
   }
 
   const refreshUserData = async () => {
-    if (!session?.user?.name || refreshing || !userData) return
+    if (!user?.displayName || refreshing || !userData) return
 
     try {
       setRefreshing(true)
@@ -220,7 +135,7 @@ export default function UserProfilePage() {
         },
         body: JSON.stringify({
           userId: userData.id,
-          username: session.user.name,
+          username: user.displayName,
         }),
       })
 
@@ -307,9 +222,9 @@ export default function UserProfilePage() {
                   <li>Limpe os cookies do navegador</li>
                   <li>
                     Acesse diretamente seu perfil pela URL:{" "}
-                    {session?.user?.name && (
-                      <Link href={`/profile/${session.user.name}`} className="text-emerald-400 hover:underline">
-                        /profile/{session.user.name}
+                    {user?.displayName && (
+                      <Link href={`/profile/${user.displayName}`} className="text-emerald-400 hover:underline">
+                        /profile/{user.displayName}
                       </Link>
                     )}
                   </li>

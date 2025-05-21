@@ -12,12 +12,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { GithubIcon, LogOut, User, BarChart2 } from "lucide-react"
-import { useSession, signIn, signOut } from "next-auth/react"
+import { useFirebaseAuth } from "@/components/firebase-session-provider"
+import { signInWithPopup, GithubAuthProvider, signOut as firebaseSignOut } from "firebase/auth"
+import { auth } from "@/lib/firebase"
 
 export default function Navbar() {
-  const { data: session, status } = useSession()
-  const isLoading = status === "loading"
-  const isAuthenticated = status === "authenticated"
+  const { user, loading } = useFirebaseAuth()
+  const isAuthenticated = !!user
+
+  const handleSignIn = async () => {
+    const provider = new GithubAuthProvider()
+    await signInWithPopup(auth, provider)
+  }
+
+  const handleSignOut = async () => {
+    await firebaseSignOut(auth)
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-700 bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-gray-900/75">
@@ -45,25 +55,25 @@ export default function Navbar() {
           </nav>
 
           <div className="flex items-center gap-4">
-            {isLoading ? (
+            {loading ? (
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
                 <div className="h-10 w-10 rounded-full bg-gray-700 animate-pulse" />
               </Button>
-            ) : isAuthenticated && session?.user ? (
+            ) : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={session.user.image || "/placeholder.svg"} alt={session.user.name || ""} />
-                      <AvatarFallback>{session.user.name?.substring(0, 2) || "GH"}</AvatarFallback>
+                      <AvatarImage src={user.photoURL || "/placeholder.svg"} alt={user.displayName || ""} />
+                      <AvatarFallback>{user.displayName?.substring(0, 2) || "GH"}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">@{session.user.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{session.user.email}</p>
+                      <p className="text-sm font-medium leading-none">@{user.displayName}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -80,14 +90,14 @@ export default function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer" onClick={() => signOut()}>
+                  <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => signIn("github")}>
+              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSignIn}>
                 <GithubIcon className="mr-2 h-4 w-4" />
                 Login with GitHub
               </Button>

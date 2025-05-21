@@ -2,14 +2,12 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-// import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import LoginButton from "@/components/login-button"
+import LoginButton from "../components/login-button"
 import { useFirebaseAuth } from "@/components/firebase-session-provider"
 
 export default function HomePage() {
-  // const { data: session, status } = useSession()
   const { user, loading } = useFirebaseAuth()
   const router = useRouter()
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "success" | "error">("idle")
@@ -96,19 +94,6 @@ export default function HomePage() {
           </Button>
         </div>
 
-        {syncStatus === "syncing" && (
-          <div className="mt-4 text-emerald-400">Syncing your GitHub data... This may take a moment.</div>
-        )}
-
-        {syncStatus === "error" && (
-          <div className="mt-4 text-red-400">There was an error syncing your data. Please try again.</div>
-        )}
-
-        <div className="mt-4">
-          <Link href="/setup-instructions" className="text-emerald-400 hover:underline text-sm">
-            Problemas com login? Veja as instruções de configuração
-          </Link>
-        </div>
 
         <div className="mt-16">
           <h2 className="text-2xl font-semibold mb-4">How it works</h2>

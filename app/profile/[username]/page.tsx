@@ -19,13 +19,12 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useSession } from "next-auth/react"
+import { useFirebaseAuth } from "@/components/firebase-session-provider"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function ProfilePage({ params }: { params: { username: string } }) {
-  const { data: session } = useSession()
+  const { user, loading } = useFirebaseAuth()
   const [userData, setUserData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
   const [debugInfo, setDebugInfo] = useState<any>(null)
@@ -35,18 +34,18 @@ export default function ProfilePage({ params }: { params: { username: string } }
       try {
         setDebugInfo({
           username: params.username,
-          sessionUsername: session?.user?.name,
+          sessionUsername: user?.displayName || user?.email,
           timestamp: new Date().toISOString(),
         })
 
         // Verificar se é o próprio perfil do usuário
-        if (session?.user?.name === params.username) {
+        if (user && (user.displayName === params.username || user.email === params.username)) {
           setIsOwnProfile(true)
         }
 
         const response = await fetch(`/api/profile/${params.username}`)
 
-        setDebugInfo((prev) => ({
+        setDebugInfo((prev: any) => ({
           ...prev,
           responseStatus: response.status,
         }))
@@ -63,7 +62,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
         const data = await response.json()
         setUserData(data)
 
-        setDebugInfo((prev) => ({
+        setDebugInfo((prev: any) => ({
           ...prev,
           dataReceived: true,
           contributionDataLength: data.contributionData?.length || 0,
@@ -71,18 +70,16 @@ export default function ProfilePage({ params }: { params: { username: string } }
       } catch (err: any) {
         setError("Failed to load user data")
         console.error(err)
-        setDebugInfo((prev) => ({
+        setDebugInfo((prev: any) => ({
           ...prev,
           error: err.message,
           errorStack: err.stack,
         }))
-      } finally {
-        setLoading(false)
       }
     }
 
     fetchData()
-  }, [params.username, session])
+  }, [params.username, user])
 
   if (loading) {
     return (

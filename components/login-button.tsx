@@ -3,14 +3,20 @@
 import { Button } from "@/components/ui/button"
 import { GithubIcon } from "lucide-react"
 import { useState } from "react"
+import { signInWithPopup, GithubAuthProvider } from "firebase/auth"
+import { auth } from "@/lib/firebase"
 
 export default function LoginButton() {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleLogin = async () => {
     setIsLoading(true)
-    // Redirecionar diretamente para a rota de API que inicia o fluxo de autenticação
-    window.location.href = "/api/auth/signin/github"
+    try {
+      const provider = new GithubAuthProvider()
+      await signInWithPopup(auth, provider)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

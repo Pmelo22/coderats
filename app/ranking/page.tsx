@@ -7,8 +7,22 @@ import { ArrowUpRight, Trophy, GitCommitHorizontal, GitPullRequestIcon, GitForkI
 import { getLeaderboard } from "@/lib/firestore-user"
 import RankingNote from "./note"
 import RankingCriteria from "./criteria"
+import { signInWithPopup, GithubAuthProvider } from "firebase/auth"
+import { auth } from "@/lib/firebase"
 
 export const revalidate = 0 // Disable cache for this page
+
+function JoinWithGitHubButton() {
+  const handleLogin = async () => {
+    const provider = new GithubAuthProvider()
+    await signInWithPopup(auth, provider)
+  }
+  return (
+    <Button asChild className="bg-emerald-600 hover:bg-emerald-700" onClick={handleLogin}>
+      <span>Join with GitHub</span>
+    </Button>
+  )
+}
 
 export default async function RankingPage() {
   // Busca o ranking e a última atualização usando a função utilitária
@@ -203,9 +217,7 @@ export default async function RankingPage() {
               <div className="text-center py-12">
                 <h3 className="text-xl font-medium mb-2">No contributors yet</h3>
                 <p className="text-gray-400 mb-6">Be the first to join the ranking!</p>
-                <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-                  <Link href="/api/auth/signin">Join with GitHub</Link>
-                </Button>
+                <JoinWithGitHubButton />
               </div>
             )}
           </CardContent>

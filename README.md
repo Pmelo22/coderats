@@ -1,50 +1,19 @@
-# GitHub Ranking Website
+# Coderats
 
-A web application that ranks GitHub users based on their contributions, built with Next.js, Supabase, and GitHub OAuth.
+## Descrição
+Coderats é um projeto incrível que visa resolver problemas complexos de forma eficiente e elegante.
 
-## Features
+## Funcionalidadess
+- Resolução de problemas complexos
+- Interface amigável
+- Alta performance
 
-- GitHub authentication
-- Contribution leaderboard
-- User profiles with detailed statistics
-- Automatic ranking updates every 12 hours
+## Tecnologias Utilizadas
+- Node.js
+- Express
 
-## Prerequisites
-
-- Node.js 18+ and npm
-- GitHub OAuth application
-
-## Environment Variables
-
-Create a `.env.local` file in the root directory with the following variables:
-
-```env
-# GitHub OAuth
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-
-# Supabase
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# App URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# Cron job secret
-CRON_SECRET_KEY=your_cron_secret_key
-```
-
-# Firebase
-As variáveis de ambiente do Firebase estão em `.env.local`.
-
-## Installation
-
-1. Clone the repository
-2. Install dependencies:
-
+## Instalação
+Para instalar as dependências do projeto, execute:
 ```bash
 npm install
 ```

@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { FirebaseSessionProvider } from "@/components/firebase-session-provider"
+import { SessionProvider as NextAuthSessionProvider } from "next-auth/react"
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  return <FirebaseSessionProvider>{children}</FirebaseSessionProvider>
+  return <NextAuthSessionProvider>{children}</NextAuthSessionProvider>
 }

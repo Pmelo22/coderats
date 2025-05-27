@@ -3,8 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { GithubIcon } from "lucide-react"
 import { useState } from "react"
-import { signInWithPopup, GithubAuthProvider } from "firebase/auth"
-import { auth } from "@/lib/firebase"
+import { signIn } from "next-auth/react"
 
 export default function LoginButton() {
   const [isLoading, setIsLoading] = useState(false)
@@ -12,8 +11,7 @@ export default function LoginButton() {
   const handleLogin = async () => {
     setIsLoading(true)
     try {
-      const provider = new GithubAuthProvider()
-      await signInWithPopup(auth, provider)
+      await signIn("github")
     } finally {
       setIsLoading(false)
     }

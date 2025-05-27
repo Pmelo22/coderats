@@ -2,70 +2,12 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { useEffect, useState } from "react"
+import { useSession, signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import LoginButton from "../components/login-button"
-import { useFirebaseAuth } from "@/components/firebase-session-provider"
 
 export default function HomePage() {
-  const { user, loading } = useFirebaseAuth()
+  const { data: session, status } = useSession()
   const router = useRouter()
-  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "success" | "error">("idle")
-
-  useEffect(() => {
-    // If user is authenticated, sync user data with Supabase
-    if (!loading && user && syncStatus === "idle") {
-      setSyncStatus("syncing")
-
-      fetch("/api/auth/sync-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error(`HTTP error! Status: ${res.status}`)
-          }
-          return res.json()
-        })
-        .then((data) => {
-          if (data.success) {
-            setSyncStatus("success")
-            console.log("User synced successfully:", data.user)
-
-            // Trigger a manual ranking update for this user
-            return fetch("/api/github/sync-user-data", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                userId: data.user.id,
-                username: data.user.username,
-              }),
-            })
-          }
-        })
-        .then((res) => {
-          if (res && !res.ok) {
-            throw new Error(`HTTP error! Status: ${res.status}`)
-          }
-          return res ? res.json() : null
-        })
-        .then((data) => {
-          if (data && data.success) {
-            console.log("User data synced with GitHub successfully")
-            // Redirect to profile page after successful sync
-            router.push("/profile")
-          }
-        })
-        .catch((error) => {
-          console.error("Error syncing user:", error)
-          setSyncStatus("error")
-        })
-    }
-  }, [loading, user, router, syncStatus])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4">
@@ -76,12 +18,18 @@ export default function HomePage() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-          {user ? (
+          {status === "authenticated" ? (
             <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 text-lg" asChild>
               <Link href="/profile">View Your Profile</Link>
             </Button>
           ) : (
-            <LoginButton />
+            <Button
+              size="lg"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 text-lg"
+              onClick={() => signIn("github")}
+            >
+              Login with GitHub
+            </Button>
           )}
 
           <Button

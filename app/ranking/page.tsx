@@ -4,30 +4,68 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { ArrowUpRight, Trophy, GitCommitHorizontal, GitPullRequestIcon, GitForkIcon, Code, Users } from "lucide-react"
-import { getLeaderboard } from "@/lib/firestore-user"
+import { getLeaderboard, LeaderboardUser } from "../../lib/firestore-user"
 import RankingNote from "./note"
 import RankingCriteria from "./criteria"
-import { signInWithPopup, GithubAuthProvider } from "firebase/auth"
-import { auth } from "@/lib/firebase"
+import { getGitHubUserStats } from '@/lib/github/getUserStats'
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { app } from '@/lib/firebase'; // ou onde seu Firebase App for inicializado
+
+
+const db = getFirestore(app);
+
 
 export const revalidate = 0 // Disable cache for this page
-
-function JoinWithGitHubButton() {
-  const handleLogin = async () => {
-    const provider = new GithubAuthProvider()
-    await signInWithPopup(auth, provider)
+export async function updateUserData({
+  username,
+  token,
+  avatar_url,
+  name,
+}: {
+  username: string;
+  token: string;
+  avatar_url?: string;
+  name?: string;
+}) {
+  const stats = await getGitHubUserStats(username, token);
+  console.log("Calling GitHub API for", username);
+  console.log("✅ GitHub stats result:", stats);
+  if (!stats) {
+    console.warn("⚠️ No stats found for user:", username);
+    return;
   }
-  return (
-    <Button asChild className="bg-emerald-600 hover:bg-emerald-700" onClick={handleLogin}>
-      <span>Join with GitHub</span>
-    </Button>
-  )
+
+  const score =
+    stats.commits * 0.4 +
+    stats.pullRequests * 0.25 +
+    stats.issues * 0.15 +
+    stats.codeReviews * 0.1 +
+    stats.diversity * 0.05 +
+    stats.activeDays * 0.03;
+
+  const userData = {
+    id: username,
+    username,
+    avatar_url,
+    name,
+    score,
+    ...stats,
+    projects: stats.diversity,
+    active_days: stats.activeDays,
+    code_reviews: stats.codeReviews,
+    pull_requests: stats.pullRequests,
+    updated_at: new Date().toISOString(),
+  };
+  console.log("📦 Saving to Firestore:", userData);
+
+  await setDoc(doc(db, 'users', username), userData, { merge: true });
 }
+
 
 export default async function RankingPage() {
   // Busca o ranking e a última atualização usando a função utilitária
   const { users, lastUpdated } = await (async () => {
-    const leaderboard = await getLeaderboard()
+    const leaderboard: LeaderboardUser[] = await getLeaderboard()
     // Busca a última atualização (pode ser melhorado para buscar do Firestore)
     let lastUpdated = new Date().toISOString()
     if (leaderboard.length > 0 && leaderboard[0].updated_at) {
@@ -63,22 +101,20 @@ export default async function RankingPage() {
             {users.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  {users.slice(0, 3).map((user) => (
+                  {users.slice(0, 3).map((user: LeaderboardUser) => (
                     <div
                       key={user.id}
-                      className={`relative p-6 rounded-lg border ${
-                        user.rank === 1
-                          ? "bg-gradient-to-br from-amber-900/40 to-amber-700/20 border-amber-500/50"
-                          : user.rank === 2
-                            ? "bg-gradient-to-br from-gray-800 to-gray-700/30 border-gray-500/50"
-                            : "bg-gradient-to-br from-amber-800/20 to-amber-700/10 border-amber-700/30"
-                      }`}
+                      className={`relative p-6 rounded-lg border ${user.rank === 1
+                        ? "bg-gradient-to-br from-amber-900/40 to-amber-700/20 border-amber-500/50"
+                        : user.rank === 2
+                          ? "bg-gradient-to-br from-gray-800 to-gray-700/30 border-gray-500/50"
+                          : "bg-gradient-to-br from-amber-800/20 to-amber-700/10 border-amber-700/30"
+                        }`}
                     >
                       <div className="absolute -top-4 -right-4">
                         <Trophy
-                          className={`h-12 w-12 ${
-                            user.rank === 1 ? "text-amber-500" : user.rank === 2 ? "text-gray-400" : "text-amber-700"
-                          }`}
+                          className={`h-12 w-12 ${user.rank === 1 ? "text-amber-500" : user.rank === 2 ? "text-gray-400" : "text-amber-700"
+                            }`}
                         />
                       </div>
                       <div className="flex items-center mb-4">
@@ -135,7 +171,7 @@ export default async function RankingPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {users.map((user) => (
+                      {users.map((user: LeaderboardUser) => (
                         <tr key={user.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
                           <td className="py-4 px-4">
                             <Badge
@@ -214,10 +250,8 @@ export default async function RankingPage() {
                 </div>
               </>
             ) : (
-              <div className="text-center py-12">
-                <h3 className="text-xl font-medium mb-2">No contributors yet</h3>
-                <p className="text-gray-400 mb-6">Be the first to join the ranking!</p>
-                <JoinWithGitHubButton />
+              <div className="text-center text-gray-400 py-8">
+                No users found in the ranking.
               </div>
             )}
           </CardContent>
@@ -235,8 +269,8 @@ export default async function RankingPage() {
               <div className="space-y-4">
                 {users
                   .slice(0, 5)
-                  .sort((a, b) => b.commits - a.commits)
-                  .map((user, index) => (
+                  .sort((a: LeaderboardUser, b: LeaderboardUser) => b.commits - a.commits)
+                  .map((user: LeaderboardUser, index: number) => (
                     <div key={user.id} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <Badge variant="outline" className="mr-3 w-8 text-center">
@@ -266,8 +300,8 @@ export default async function RankingPage() {
               <div className="space-y-4">
                 {users
                   .slice(0, 5)
-                  .sort((a, b) => b.pull_requests - a.pull_requests)
-                  .map((user, index) => (
+                  .sort((a: LeaderboardUser, b: LeaderboardUser) => b.pull_requests - a.pull_requests)
+                  .map((user: LeaderboardUser, index: number) => (
                     <div key={user.id} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <Badge variant="outline" className="mr-3 w-8 text-center">
@@ -297,8 +331,8 @@ export default async function RankingPage() {
               <div className="space-y-4">
                 {users
                   .slice(0, 5)
-                  .sort((a, b) => b.code_reviews - a.code_reviews)
-                  .map((user, index) => (
+                  .sort((a: LeaderboardUser, b: LeaderboardUser) => b.code_reviews - a.code_reviews)
+                  .map((user: LeaderboardUser, index: number) => (
                     <div key={user.id} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <Badge variant="outline" className="mr-3 w-8 text-center">
@@ -328,8 +362,8 @@ export default async function RankingPage() {
               <div className="space-y-4">
                 {users
                   .slice(0, 5)
-                  .sort((a, b) => b.projects - a.projects)
-                  .map((user, index) => (
+                  .sort((a: LeaderboardUser, b: LeaderboardUser) => b.projects - a.projects)
+                  .map((user: LeaderboardUser, index: number) => (
                     <div key={user.id} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <Badge variant="outline" className="mr-3 w-8 text-center">

@@ -3,6 +3,9 @@
 
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { getGitHubUserStats } from '@/lib/github/getUserStats'
+import { updateUserData } from '@/app/ranking/page';
+
 
 interface UserStats {
   commits: number;
@@ -17,53 +20,42 @@ export default function UserProfile() {
   const { data: session, status } = useSession();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [synced, setSynced] = useState(false);
+
+  function syncData() {
+    setSynced(true);
+  }
 
   useEffect(() => {
-    async function fetchGitHubData() {
-      if (session?.accessToken && session.user?.name) {
-        const headers = {
-          Authorization: `Bearer ${session.accessToken}`,
-          Accept: 'application/vnd.github.v3+json',
-        };
+    async function loadStats() {
+      if (!session?.accessToken || !session?.user || !synced) return
+      await updateUserData({
+        username: session.user.login!,
+        token: session.accessToken as string,
+        avatar_url: session.user.image,
+        name: session.user.name,
+      });
+      const username = session.user?.login
+      if (!username) {
+        console.warn("⚠️ Nome de usuário do GitHub não disponível na sessão.")
+        setLoading(false)
+        return
+      }
 
-        const username = session.user.name;
-
-        const [commitsRes, prRes, issuesRes, reviewsRes, eventsRes] = await Promise.all([
-          fetch(`https://api.github.com/search/commits?q=author:${username}`, {
-            headers: { ...headers, Accept: 'application/vnd.github.cloak-preview' },
-          }),
-          fetch(`https://api.github.com/search/issues?q=type:pr+author:${username}`, { headers }),
-          fetch(`https://api.github.com/search/issues?q=type:issue+author:${username}`, { headers }),
-          fetch(`https://api.github.com/search/issues?q=reviewed-by:${username}`, { headers }),
-          fetch(`https://api.github.com/users/${username}/events`, { headers }),
-        ]);
-
-        const [commitsData, prData, issuesData, reviewsData, eventsData] = await Promise.all([
-          commitsRes.json(),
-          prRes.json(),
-          issuesRes.json(),
-          reviewsRes.json(),
-          eventsRes.json(),
-        ]);
-
-        const activeDays = new Set(eventsData.map((event: any) => event.created_at.slice(0, 10)));
-        const diversity = new Set(eventsData.map((event: any) => event.repo.name));
-
-        setStats({
-          commits: commitsData.total_count || 0,
-          pullRequests: prData.total_count || 0,
-          issues: issuesData.total_count || 0,
-          codeReviews: reviewsData.total_count || 0,
-          diversity: diversity.size,
-          activeDays: activeDays.size,
-        });
-
-        setLoading(false);
+      try {
+        const stats = await getGitHubUserStats(username, session.accessToken as string)
+        setStats(stats)
+      } catch (error) {
+        console.error("Erro ao buscar dados do GitHub:", error)
+      } finally {
+        setLoading(false)
       }
     }
 
-    fetchGitHubData();
-  }, [session]);
+    syncData();
+    loadStats()
+  }, [session, synced])
+
 
   if (status === 'loading' || loading) return <p>Carregando...</p>;
 
@@ -79,7 +71,7 @@ export default function UserProfile() {
             className="w-24 h-24 rounded-full"
           />
           <div>
-            <h2 className="text-2xl font-semibold">{session?.user?.name}</h2>
+            <h2 className="text-2xl font-semibold">{session?.user?.login}</h2>
             <p className="text-gray-400">{session?.user?.email}</p>
           </div>
         </div>
@@ -120,4 +112,8 @@ export default function UserProfile() {
       </div>
     </div>
   );
+}
+
+function syncData() {
+  throw new Error('Function not implemented.');
 }

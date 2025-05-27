@@ -7,11 +7,60 @@ import { ArrowUpRight, Trophy, GitCommitHorizontal, GitPullRequestIcon, GitForkI
 import { getLeaderboard, LeaderboardUser } from "../../lib/firestore-user"
 import RankingNote from "./note"
 import RankingCriteria from "./criteria"
-import JoinWithGitHubButton from "./JoinWithGitHubButton"
-import { signInWithPopup, GithubAuthProvider } from "firebase/auth"
-import { auth } from "@/lib/firebase"
+import { getGitHubUserStats } from '@/lib/github/getUserStats'
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { app } from '@/lib/firebase'; // ou onde seu Firebase App for inicializado
+
+
+const db = getFirestore(app);
+
 
 export const revalidate = 0 // Disable cache for this page
+export async function updateUserData({
+  username,
+  token,
+  avatar_url,
+  name,
+}: {
+  username: string;
+  token: string;
+  avatar_url?: string;
+  name?: string;
+}) {
+  const stats = await getGitHubUserStats(username, token);
+  console.log("Calling GitHub API for", username);
+  console.log("✅ GitHub stats result:", stats);
+  if (!stats) {
+    console.warn("⚠️ No stats found for user:", username);
+    return;
+  }
+
+  const score =
+    stats.commits * 0.4 +
+    stats.pullRequests * 0.25 +
+    stats.issues * 0.15 +
+    stats.codeReviews * 0.1 +
+    stats.diversity * 0.05 +
+    stats.activeDays * 0.03;
+
+  const userData = {
+    id: username,
+    username,
+    avatar_url,
+    name,
+    score,
+    ...stats,
+    projects: stats.diversity,
+    active_days: stats.activeDays,
+    code_reviews: stats.codeReviews,
+    pull_requests: stats.pullRequests,
+    updated_at: new Date().toISOString(),
+  };
+  console.log("📦 Saving to Firestore:", userData);
+
+  await setDoc(doc(db, 'users', username), userData, { merge: true });
+}
+
 
 export default async function RankingPage() {
   // Busca o ranking e a última atualização usando a função utilitária
@@ -55,19 +104,17 @@ export default async function RankingPage() {
                   {users.slice(0, 3).map((user: LeaderboardUser) => (
                     <div
                       key={user.id}
-                      className={`relative p-6 rounded-lg border ${
-                        user.rank === 1
-                          ? "bg-gradient-to-br from-amber-900/40 to-amber-700/20 border-amber-500/50"
-                          : user.rank === 2
-                            ? "bg-gradient-to-br from-gray-800 to-gray-700/30 border-gray-500/50"
-                            : "bg-gradient-to-br from-amber-800/20 to-amber-700/10 border-amber-700/30"
-                      }`}
+                      className={`relative p-6 rounded-lg border ${user.rank === 1
+                        ? "bg-gradient-to-br from-amber-900/40 to-amber-700/20 border-amber-500/50"
+                        : user.rank === 2
+                          ? "bg-gradient-to-br from-gray-800 to-gray-700/30 border-gray-500/50"
+                          : "bg-gradient-to-br from-amber-800/20 to-amber-700/10 border-amber-700/30"
+                        }`}
                     >
                       <div className="absolute -top-4 -right-4">
                         <Trophy
-                          className={`h-12 w-12 ${
-                            user.rank === 1 ? "text-amber-500" : user.rank === 2 ? "text-gray-400" : "text-amber-700"
-                          }`}
+                          className={`h-12 w-12 ${user.rank === 1 ? "text-amber-500" : user.rank === 2 ? "text-gray-400" : "text-amber-700"
+                            }`}
                         />
                       </div>
                       <div className="flex items-center mb-4">
@@ -203,10 +250,8 @@ export default async function RankingPage() {
                 </div>
               </>
             ) : (
-              <div className="text-center py-12">
-                <h3 className="text-xl font-medium mb-2">No contributors yet</h3>
-                <p className="text-gray-400 mb-6">Be the first to join the ranking!</p>
-                <JoinWithGitHubButton />
+              <div className="text-center text-gray-400 py-8">
+                No users found in the ranking.
               </div>
             )}
           </CardContent>

@@ -1,70 +1,124 @@
-# Coderats
+# 🧠 GitHub Contributions Ranking
 
-## Descrição
-Coderats é um projeto incrível que visa resolver problemas complexos de forma eficiente e elegante.
+A web platform built with **Next.js (App Router)** + **NextAuth + Firebase Firestore** that authenticates users via GitHub and displays a real-time ranking based on actual contribution data.
 
-## Funcionalidadess
-- Resolução de problemas complexos
-- Interface amigável
-- Alta performance
+---
 
-## Tecnologias Utilizadas
-- Node.js
-- Express
+## 🚀 Features
 
-## Instalação
-Para instalar as dependências do projeto, execute:
+- 🔐 GitHub OAuth login (NextAuth)
+- 🔎 Real-time contribution tracking via GitHub API:
+  - Commits
+  - Pull Requests
+  - Issues
+  - Code Reviewsa
+  - Project Diversity
+  - Active Days
+- 📊 Automatic score calculation based on weighted criteria
+- 🏆 Real-time public leaderboard
+- 👤 Private profile page with user-specific stats
+- 🔄 Auto-sync every 24 hours + manual sync (up to 3x/day)
+
+---
+
+## 🧱 Tech Stack
+
+- [Next.js 13+ (App Router)](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Firebase Firestore](https://firebase.google.com/products/firestore)
+- [NextAuth.js (GitHub OAuth)](https://next-auth.js.org/)
+- [GitHub REST API v3](https://docs.github.com/en/rest)
+
+---
+
+## 🛠️ Setup
+
+1. **Clone the repository:**
+
 ```bash
-npm install
+git clone https://github.com/your-username/github-ranking.git
+cd github-ranking
 ```
 
-3. Run the development server:
+2. **Create `.env.local` and add:**
+
+```env
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+NEXTAUTH_SECRET=your_secret
+NEXTAUTH_URL=http://localhost:3000
+
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_APP_ID=...
+```
+
+3. **Install dependencies and start dev server:**
 
 ```bash
+npm install
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+---
 
-## Setting Up the Cron Job
+## 🔁 Update Logic
 
-To update the rankings every 12 hours, you need to set up a cron job that calls the update-rankings API endpoint.
+- 📅 User data is updated **automatically once every 24 hours**
+- 🔘 Users can trigger **up to 3 manual updates per day**
+- 🔒 All data is cached in Firestore to avoid GitHub API overuse
 
-### Using Vercel Cron Jobs
+---
 
-If you're deploying to Vercel, you can use Vercel Cron Jobs:
+## 📦 Project Structure
 
-1. Create a `vercel.json` file in the root directory:
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/update-rankings",
-      "schedule": "0 */12 * * *"
-    }
-  ]
-}
+```
+├── app/
+│   ├── profile/
+│   ├── ranking/
+├── lib/
+│   ├── firestore-user.ts       ← leaderboard logic + syncing
+│   ├── github/
+│   │   └── getUserStats.ts     ← GitHub API integration
+├── components/                 ← UI components
 ```
 
-2. Make sure to add the `CRON_SECRET_KEY` environment variable to your Vercel project.
+---
 
-### Using an External Cron Service
+## 📈 Scoring Breakdown
 
-If you're not using Vercel, you can use an external cron service like [Cron-job.org](https://cron-job.org/) or [GitHub Actions](https://github.com/features/actions):
+| Criteria         | Weight (%) |
+|------------------|------------|
+| Commits          | 40%        |
+| Pull Requests    | 25%        |
+| Issues           | 15%        |
+| Code Reviews     | 10%        |
+| Project Diversity| 5%         |
+| Active Days      | 3%         |
+| Streak (coming)  | 2%         |
 
-1. Set up a cron job to make a GET request to `https://your-domain.com/api/cron/update-rankings` every 12 hours.
-2. Include the authorization header: `Authorization: Bearer your_cron_secret_key`
+---
 
-## Deployment
+## ✨ Future Improvements
 
-### Deploying to Vercel
+- 🧩 Contribution streak tracking
+- 🕒 CRON-based background sync (Firebase Functions)
+- 📈 Personal dashboard with history
 
-1. Push your code to a GitHub repository
-2. Import the repository in Vercel
-3. Add the environment variables to your Vercel project
-4. Deploy!
+---
 
-## License
+## 📄 License
 
-MIT
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## 🙌 Credits
+
+- [Next.js](https://nextjs.org/)
+- [GitHub REST API](https://docs.github.com/en/rest)
+- [Firebase](https://firebase.google.com/)
+- [Shadcn UI / Tailwind CSS](https://ui.shadcn.dev/)

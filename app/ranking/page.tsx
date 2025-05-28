@@ -103,7 +103,7 @@ export default async function RankingPage() {
                         </div>
                       </div>
                       <Button variant="outline" size="sm" className="w-full border-gray-600 hover:bg-gray-700" asChild>
-                        <Link href={`/profile/${user.username}`}>
+                        <Link href={`/u/${user.username}`}>
                           View Profile <ArrowUpRight className="ml-2 h-4 w-4" />
                         </Link>
                       </Button>
@@ -195,7 +195,7 @@ export default async function RankingPage() {
                           </td>
                           <td className="py-4 px-4 text-right">
                             <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" asChild>
-                              <Link href={`/profile/${user.username}`}>
+                              <Link href={`/u/${user.username}`}>
                                 <ArrowUpRight className="h-4 w-4" />
                               </Link>
                             </Button>

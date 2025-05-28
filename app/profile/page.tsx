@@ -4,7 +4,7 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { getGitHubUserStats } from '@/lib/github/getUserStats'
-import { updateUserData } from '@/lib/firestore-user';
+import { updateUserData, getLeaderboard } from '@/lib/firestore-user';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,13 +39,13 @@ interface UserStats {
 export default function UserProfile() {
   const { data: session, status } = useSession();
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [synced, setSynced] = useState(false);
 
   function syncData() {
     setSynced(true);
   }
-
   useEffect(() => {
   async function loadStats() {
     if (!session?.accessToken || !session?.user || synced) return;
@@ -67,8 +67,13 @@ export default function UserProfile() {
         force: false, // atualização automática
       });
 
-      const stats = await getGitHubUserStats(username, session.accessToken as string);
+      const [stats, leaderboard] = await Promise.all([
+        getGitHubUserStats(username, session.accessToken as string),
+        getLeaderboard()
+      ]);
+      
       setStats(stats);
+      setAllUsers(leaderboard);
       setSynced(true);
     } catch (error) {
       console.error("❌ Erro ao buscar dados do GitHub ou atualizar:", error);
@@ -325,19 +330,9 @@ export default function UserProfile() {
                     <UserRepositories username={session.user.login ?? ""} />
                   </CardContent>
                 </Card>
-              </TabsContent>
-
-              {/* Recomendações */}
+              </TabsContent>              {/* Recomendações */}
               <TabsContent value="recommendations" className="mt-4">
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardHeader>
-                    <CardTitle>Recomendações para subir no ranking</CardTitle>
-                    <CardDescription>Dicas personalizadas para aumentar sua pontuação:</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ScoreRecommendations userData={stats} />
-                  </CardContent>
-                </Card>
+                <ScoreRecommendations userData={stats} allUsers={allUsers} />
               </TabsContent>
             </Tabs>
           </div>

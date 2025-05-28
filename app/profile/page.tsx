@@ -47,35 +47,39 @@ export default function UserProfile() {
   }
 
   useEffect(() => {
-    async function loadStats() {
-      if (!session?.accessToken || !session?.user || !synced) return
+  async function loadStats() {
+    if (!session?.accessToken || !session?.user || synced) return;
+
+    const username = session.user.login;
+    if (!username) {
+      console.warn("⚠️ Nome de usuário do GitHub não disponível na sessão.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log("🔄 Atualizando dados do usuário via updateUserData...");
       await updateUserData({
-        username: session.user.login!,
+        username,
         token: session.accessToken as string,
         avatar_url: session.user.image,
         name: session.user.name,
-        force: false, // ⬅️ automático
+        force: false, // atualização automática
       });
-      const username = session.user?.login
-      if (!username) {
-        console.warn("⚠️ Nome de usuário do GitHub não disponível na sessão.")
-        setLoading(false)
-        return
-      }
 
-      try {
-        const stats = await getGitHubUserStats(username, session.accessToken as string)
-        setStats(stats)
-      } catch (error) {
-        console.error("Erro ao buscar dados do GitHub:", error)
-      } finally {
-        setLoading(false)
-      }
+      const stats = await getGitHubUserStats(username, session.accessToken as string);
+      setStats(stats);
+      setSynced(true);
+    } catch (error) {
+      console.error("❌ Erro ao buscar dados do GitHub ou atualizar:", error);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    syncData();
-    loadStats()
-  }, [session, synced])
+  loadStats();
+}, [session, synced]);
+
 
 
   // Preparar dados para o gráfico de contribuições

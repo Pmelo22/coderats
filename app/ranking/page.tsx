@@ -3,63 +3,20 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
-import { ArrowUpRight, Trophy, GitCommitHorizontal, GitPullRequestIcon, GitForkIcon, Code, Users } from "lucide-react"
-import { getLeaderboard, LeaderboardUser } from "../../lib/firestore-user"
+import {
+  ArrowUpRight,
+  Trophy,
+  GitCommitHorizontal,
+  GitPullRequestIcon,
+  GitForkIcon,
+  Code,
+  Users,
+} from "lucide-react"
+import { getLeaderboard, LeaderboardUser, updateUserData } from "@/lib/firestore-user"
 import RankingNote from "./note"
 import RankingCriteria from "./criteria"
-import { getGitHubUserStats } from '@/lib/github/getUserStats'
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import { app } from '@/lib/firebase'; // ou onde seu Firebase App for inicializado
 
-
-const db = getFirestore(app);
-
-
-export const revalidate = 0 // Disable cache for this page
-export async function updateUserData({
-  username,
-  token,
-  avatar_url,
-  name,
-}: {
-  username: string;
-  token: string;
-  avatar_url?: string;
-  name?: string;
-}) {
-  const stats = await getGitHubUserStats(username, token);
-  console.log("Calling GitHub API for", username);
-  console.log("✅ GitHub stats result:", stats);
-  if (!stats) {
-    console.warn("⚠️ No stats found for user:", username);
-    return;
-  }
-
-  const score =
-    stats.commits * 0.4 +
-    stats.pullRequests * 0.25 +
-    stats.issues * 0.15 +
-    stats.codeReviews * 0.1 +
-    stats.diversity * 0.05 +
-    stats.activeDays * 0.03;
-
-  const userData = {
-    id: username,
-    username,
-    avatar_url,
-    name,
-    score,
-    ...stats,
-    projects: stats.diversity,
-    active_days: stats.activeDays,
-    code_reviews: stats.codeReviews,
-    pull_requests: stats.pullRequests,
-    updated_at: new Date().toISOString(),
-  };
-  console.log("📦 Saving to Firestore:", userData);
-
-  await setDoc(doc(db, 'users', username), userData, { merge: true });
-}
+export const revalidate = 0
 
 
 export default async function RankingPage() {

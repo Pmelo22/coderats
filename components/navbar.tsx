@@ -25,7 +25,7 @@ export default function Navbar() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-2">
               <GithubIcon className="h-6 w-6" />
-              <span className="text-lg font-bold">GitHub Ranking</span>
+              <span className="text-lg font-bold">Coderats</span>
             </Link>
           </div>
 

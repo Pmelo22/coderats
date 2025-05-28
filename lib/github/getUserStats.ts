@@ -1,11 +1,13 @@
 // lib/github/getUserStats.ts
 export interface UserStats {
+    streak: number
     commits: number
     pullRequests: number
     issues: number
     codeReviews: number
     diversity: number
     activeDays: number
+    contributionDates?: string[]
 }
 
 export async function getGitHubUserStats(username: string, token: string): Promise<UserStats> {
@@ -42,13 +44,16 @@ export async function getGitHubUserStats(username: string, token: string): Promi
     
     const activeDays = new Set(eventsData.map((event: any) => event.created_at.slice(0, 10)))
     const diversity = new Set(eventsData.map((event: any) => event.repo.name))
+    const contributionDates = Array.from(activeDays).map(String);
 
     return {
+        streak: 0, // TODO: Calculate actual streak if needed
         commits: commitsData.total_count || 0,
         pullRequests: prData.total_count || 0,
         issues: issuesData.total_count || 0,
         codeReviews: reviewsData.total_count || 0,
         diversity: diversity.size,
         activeDays: activeDays.size,
+        contributionDates,
     }
 }

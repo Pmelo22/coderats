@@ -23,6 +23,15 @@ export interface LeaderboardUser {
   projects: number;
   active_days: number;
   updated_at?: string;
+  lastRank?: number;
+  rankDelta?: number;
+  streak?: number;
+  isTopCommitter?: boolean;
+  isTopPR?: boolean;
+  isTopIssue?: boolean;
+  isTopReviewer?: boolean;
+  scorePercentage?: number;
+  lastSynced?: string;
 }
 
 // ------------------ Score Cálculo ------------------
@@ -51,6 +60,21 @@ function countRefreshesToday(timestamps: string[]): number {
   return timestamps.filter((ts) => ts.startsWith(today)).length;
 }
 
+function calculateStreak(dates: string[]): number {
+  if (!dates.length) return 0;
+  const sorted = dates.map(d => new Date(d)).sort((a, b) => b.getTime() - a.getTime());
+  let streak = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const diff = (sorted[i - 1].getTime() - sorted[i].getTime()) / (1000 * 60 * 60 * 24);
+    if (diff === 1) {
+      streak++;
+    } else if (diff > 1) {
+      break;
+    }
+  }
+  return streak;
+}
+
 // ------------------ UpdateUserData Principal ------------------
 
 export async function updateUserData({
@@ -72,6 +96,8 @@ export async function updateUserData({
 
   const updatedAt = existing.updated_at || null;
   const logs: string[] = existing.refresh_logs || [];
+  const lastRank = existing.rank || existing.lastRank || null;
+  const prevStreak = existing.streak || 0;
 
   if (!force && updatedAt && !isOlderThan24Hours(updatedAt)) {
     console.log("⏱️ Atualização automática ignorada (< 24h)");
@@ -92,6 +118,12 @@ export async function updateUserData({
     stats.diversity * 0.5 +
     stats.activeDays * 0.3;
 
+  // Calculate streak from events (if available)
+  let streak = prevStreak;
+  if (stats.contributionDates) {
+    streak = calculateStreak(stats.contributionDates);
+  }
+
   const now = new Date().toISOString();
 
   const userData = {
@@ -108,6 +140,8 @@ export async function updateUserData({
     active_days: stats.activeDays,
     updated_at: now,
     refresh_logs: force ? [...logs, now] : logs,
+    lastRank: lastRank,
+    streak,
   };
 
   console.log("📦 Salvando usuário no Firestore:", userData);
@@ -122,7 +156,6 @@ export async function getLeaderboard(): Promise<LeaderboardUser[]> {
 
   snapshot.forEach((docSnap) => {
     const d = docSnap.data();
-
     const user: LeaderboardUser = {
       id: d.id,
       username: d.username || d.name || "-",
@@ -136,14 +169,34 @@ export async function getLeaderboard(): Promise<LeaderboardUser[]> {
       score: 0,
       rank: 0,
       updated_at: d.updated_at || d.lastSyncedAt || d.created_at,
+      lastRank: d.lastRank,
+      streak: d.streak,
     };
-
     user.score = Math.round(calculateScore(user));
     users.push(user);
   });
 
   users.sort((a, b) => b.score - a.score);
   users.forEach((u, i) => (u.rank = i + 1));
+
+  // Calculate rankDelta, scorePercentage, isTopX, lastSynced
+  const topUser = users[0];
+  let topCommit = 0, topPR = 0, topIssue = 0, topReview = 0;
+  users.forEach(u => {
+    if (u.commits > topCommit) topCommit = u.commits;
+    if (u.pull_requests > topPR) topPR = u.pull_requests;
+    if (u.issues > topIssue) topIssue = u.issues;
+    if (u.code_reviews > topReview) topReview = u.code_reviews;
+  });
+  users.forEach(u => {
+    u.rankDelta = u.lastRank ? u.lastRank - u.rank : 0;
+    u.scorePercentage = topUser ? Math.round((u.score / topUser.score) * 100) : 100;
+    u.isTopCommitter = u.commits === topCommit && topCommit > 0;
+    u.isTopPR = u.pull_requests === topPR && topPR > 0;
+    u.isTopIssue = u.issues === topIssue && topIssue > 0;
+    u.isTopReviewer = u.code_reviews === topReview && topReview > 0;
+    u.lastSynced = u.updated_at;
+  });
 
   return users;
 }

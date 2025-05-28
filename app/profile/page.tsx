@@ -4,7 +4,7 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { getGitHubUserStats } from '@/lib/github/getUserStats'
-import { updateUserData } from '@/lib/firestore-user';
+import { updateUserData, getLeaderboard } from '@/lib/firestore-user';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,43 +39,52 @@ interface UserStats {
 export default function UserProfile() {
   const { data: session, status } = useSession();
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [synced, setSynced] = useState(false);
 
   function syncData() {
     setSynced(true);
   }
-
   useEffect(() => {
-    async function loadStats() {
-      if (!session?.accessToken || !session?.user || !synced) return
+  async function loadStats() {
+    if (!session?.accessToken || !session?.user || synced) return;
+
+    const username = session.user.login;
+    if (!username) {
+      console.warn("⚠️ Nome de usuário do GitHub não disponível na sessão.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log("🔄 Atualizando dados do usuário via updateUserData...");
       await updateUserData({
-        username: session.user.login!,
+        username,
         token: session.accessToken as string,
         avatar_url: session.user.image,
         name: session.user.name,
-        force: false, // ⬅️ automático
+        force: false, // atualização automática
       });
-      const username = session.user?.login
-      if (!username) {
-        console.warn("⚠️ Nome de usuário do GitHub não disponível na sessão.")
-        setLoading(false)
-        return
-      }
 
-      try {
-        const stats = await getGitHubUserStats(username, session.accessToken as string)
-        setStats(stats)
-      } catch (error) {
-        console.error("Erro ao buscar dados do GitHub:", error)
-      } finally {
-        setLoading(false)
-      }
+      const [stats, leaderboard] = await Promise.all([
+        getGitHubUserStats(username, session.accessToken as string),
+        getLeaderboard()
+      ]);
+      
+      setStats(stats);
+      setAllUsers(leaderboard);
+      setSynced(true);
+    } catch (error) {
+      console.error("❌ Erro ao buscar dados do GitHub ou atualizar:", error);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    syncData();
-    loadStats()
-  }, [session, synced])
+  loadStats();
+}, [session, synced]);
+
 
 
   // Preparar dados para o gráfico de contribuições
@@ -321,19 +330,9 @@ export default function UserProfile() {
                     <UserRepositories username={session.user.login ?? ""} />
                   </CardContent>
                 </Card>
-              </TabsContent>
-
-              {/* Recomendações */}
+              </TabsContent>              {/* Recomendações */}
               <TabsContent value="recommendations" className="mt-4">
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardHeader>
-                    <CardTitle>Recomendações para subir no ranking</CardTitle>
-                    <CardDescription>Dicas personalizadas para aumentar sua pontuação:</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ScoreRecommendations userData={stats} />
-                  </CardContent>
-                </Card>
+                <ScoreRecommendations userData={stats} allUsers={allUsers} />
               </TabsContent>
             </Tabs>
           </div>

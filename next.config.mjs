@@ -1,5 +1,3 @@
-import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-
 let userConfig = undefined
 try {
   // try to import ESM first
@@ -30,9 +28,6 @@ const nextConfig = {
     parallelServerCompiles: true,
   },
   webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.plugins.push(new MiniCssExtractPlugin());
-    }
     return config;
   },
 }

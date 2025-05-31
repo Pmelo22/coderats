@@ -36,6 +36,30 @@ export interface LeaderboardUser {
   isTopReviewer?: boolean;
   scorePercentage?: number;
   lastSynced?: string;
+  
+  // Múltiplas plataformas
+  connectedPlatforms?: string[];
+  platforms?: {
+    [key: string]: {
+      username: string;
+      token?: string;
+      commits: number;
+      pull_requests: number;
+      issues: number;
+      repositories: number;
+      last_updated?: string;
+    }
+  };
+  
+  // Tokens para APIs
+  github_token?: string;
+  gitlab_token?: string;
+  bitbucket_token?: string;
+  
+  // Usernames por plataforma
+  github_username?: string;
+  gitlab_username?: string;
+  bitbucket_username?: string;
 }
 
 // ------------------ Score Cálculo ------------------

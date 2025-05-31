@@ -27,7 +27,9 @@ export default function HomePage() {
           transition={{ duration: 6, repeat: Infinity, delay: 2 }}
           style={{ position: "absolute", bottom: "20%", right: "10%" }}
         />
-      </div>      <div className="max-w-3xl w-full text-center space-y-8 z-10">
+      </div>
+
+      <div className="max-w-3xl w-full text-center space-y-8 z-10">
         {/* Admin Notices */}
         <AdminNotices location="home" />
         
@@ -39,13 +41,14 @@ export default function HomePage() {
         >
           Coderats
         </motion.h1>
+
         <motion.p
           className="text-xl text-gray-300"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.5 }}
         >
-          Compete with other developers and track your GitHub contributions in real-time.
+          Compete com outros desenvolvedores e acompanhe suas contribuições do GitHub, GitLab e Bitbucket em tempo real.
         </motion.p>
 
         <motion.div
@@ -56,16 +59,21 @@ export default function HomePage() {
         >
           {status === "authenticated" ? (
             <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 text-lg" asChild>
-              <Link href="/profile">View Your Profile</Link>
+              <Link href="/profile">Ver Seu Perfil</Link>
             </Button>
           ) : (
-            <Button
-              size="lg"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 text-lg"
-              onClick={() => signIn("github")}
-            >
-              Login with GitHub
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button
+                size="lg"
+                className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-6 text-lg border border-gray-600"
+                onClick={() => signIn("github")}
+              >
+                Login com GitHub
+              </Button>
+              <p className="text-sm text-gray-400 text-center">
+                Conecte outras plataformas após o login
+              </p>
+            </div>
           )}
 
           <Button
@@ -74,7 +82,7 @@ export default function HomePage() {
             className="border-gray-600 text-gray-200 hover:bg-gray-700 px-8 py-6 text-lg"
             asChild
           >
-            <Link href="/ranking">View Ranking</Link>
+            <Link href="/ranking">Ver Ranking</Link>
           </Button>
         </motion.div>
 
@@ -84,29 +92,49 @@ export default function HomePage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1.5 }}
         >
-          <h2 className="text-2xl font-semibold mb-4">How it works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">            <motion.div
+          <h2 className="text-2xl font-semibold mb-4">Como funciona</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+            <motion.div
               className="bg-gray-800 p-6 rounded-lg border border-gray-700"
               whileHover={{ scale: 1.05 }}
             >
-              <div className="text-emerald-500 text-xl font-bold mb-2">1. Connect</div>
-              <p className="text-gray-300">Sign in with your GitHub account to join the competition</p>
+              <div className="text-emerald-500 text-xl font-bold mb-2">1. Conecte</div>
+              <p className="text-gray-300">Faça login com GitHub e conecte GitLab/Bitbucket</p>
             </motion.div>
             <motion.div
               className="bg-gray-800 p-6 rounded-lg border border-gray-700"
               whileHover={{ scale: 1.05 }}
             >
-              <div className="text-emerald-500 text-xl font-bold mb-2">2. Contribute</div>
-              <p className="text-gray-300">Make commits, open PRs, and contribute to repositories</p>
+              <div className="text-emerald-500 text-xl font-bold mb-2">2. Contribua</div>
+              <p className="text-gray-300">Faça commits, abra PRs e contribua em todas as plataformas</p>
             </motion.div>
             <motion.div
               className="bg-gray-800 p-6 rounded-lg border border-gray-700"
               whileHover={{ scale: 1.05 }}
             >
               <div className="text-emerald-500 text-xl font-bold mb-2">3. Compete</div>
-              <p className="text-gray-300">Watch your ranking rise as you become more active</p>
+              <p className="text-gray-300">Veja seu ranking subir com atividades de múltiplas plataformas</p>
             </motion.div>
           </div>
+
+          {/* Botão de Notas de Atualização */}
+          <motion.div
+            className="mt-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 2 }}
+          >
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-blue-600 text-blue-300 hover:bg-blue-900/30 px-8 py-4"
+              asChild
+            >
+              <Link href="/updates">
+                📋 Ver Notas de Atualização
+              </Link>
+            </Button>
+          </motion.div>
         </motion.div>
       </div>
     </div>

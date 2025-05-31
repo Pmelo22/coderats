@@ -16,6 +16,7 @@ import { getLeaderboard, LeaderboardUser, updateUserData } from "@/lib/firestore
 import RankingNote from "./note"
 import RankingCriteria from "./criteria"
 import AdminNotices from "@/components/AdminNotices"
+import PlatformContributionBadges from "@/components/PlatformContributionBadges"
 
 export const revalidate = 0
 
@@ -81,10 +82,13 @@ export default async function RankingPage() {
                         <Avatar className="h-16 w-16 border-2 border-emerald-500">
                           <AvatarImage src={user.avatar_url || "/placeholder.svg"} alt={user.username} />
                           <AvatarFallback>{user.username.substring(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="ml-4">
+                        </Avatar>                        <div className="ml-4">
                           <div className="font-bold text-xl">@{user.username}</div>
-                          <div className="text-sm text-gray-400">Score: {user.score}</div>
+                          <div className="text-sm text-gray-400 mb-2">Score: {user.score}</div>
+                          <PlatformContributionBadges 
+                            platforms={user.platforms} 
+                            showDetails={false}
+                          />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 mb-4">
@@ -154,9 +158,12 @@ export default async function RankingPage() {
                               <Avatar className="h-10 w-10 mr-3">
                                 <AvatarImage src={user.avatar_url || "/placeholder.svg"} alt={user.username} />
                                 <AvatarFallback>{user.username.substring(0, 2).toUpperCase()}</AvatarFallback>
-                              </Avatar>
-                              <div>
+                              </Avatar>                              <div>
                                 <div className="font-medium">@{user.username}</div>
+                                <PlatformContributionBadges 
+                                  platforms={user.platforms} 
+                                  compact={true}
+                                />
                               </div>
                             </div>
                           </td>

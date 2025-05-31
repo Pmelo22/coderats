@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Users, GitCommitHorizontal, GitPullRequestIcon, Star, GitForkIcon, Code, Calendar, Share2, Trophy, Flame, Globe2, Github } from "lucide-react";
 import UserPublicRepositories from "@/components/user-public-repositories";
 import ClientProfileActions from "@/components/ClientProfileActions";
+import PlatformContributionBadges from "@/components/PlatformContributionBadges";
 
 interface UserProfileProps {
   params: { username: string };
@@ -143,9 +144,15 @@ export default async function PublicUserProfile({ params }: UserProfileProps) {
                     <svg className="w-6 h-6 text-sky-400 hover:text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557a9.93 9.93 0 0 1-2.828.775 4.932 4.932 0 0 0 2.165-2.724c-.951.564-2.005.974-3.127 1.195a4.92 4.92 0 0 0-8.384 4.482c-4.086-.205-7.713-2.164-10.141-5.144a4.822 4.822 0 0 0-.664 2.475c0 1.708.87 3.216 2.188 4.099a4.904 4.904 0 0 1-2.229-.616c-.054 2.281 1.581 4.415 3.949 4.89a4.936 4.936 0 0 1-2.224.084c.627 1.956 2.444 3.377 4.6 3.417A9.867 9.867 0 0 1 0 21.543a13.94 13.94 0 0 0 7.548 2.212c9.057 0 14.009-7.496 14.009-13.986 0-.213-.005-.425-.014-.636A9.936 9.936 0 0 0 24 4.557z"/></svg>
                   </a>
                 )}
-              </div>
-              {/* Bio */}
+              </div>              {/* Bio */}
               {getField('bio') && <p className="text-gray-200 text-base italic mt-1">{getField('bio')}</p>}
+              {/* Platform Badges */}
+              <div className="mt-2">
+                <PlatformContributionBadges 
+                  platforms={getField('platforms')} 
+                  showDetails={true}
+                />
+              </div>
               {/* Informações de contato */}
               <div className="flex gap-2 flex-wrap mt-2">
                 {getField('email') && <Badge variant="outline">{getField('email')}</Badge>}

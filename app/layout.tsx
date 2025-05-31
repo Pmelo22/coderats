@@ -2,6 +2,7 @@ import type React from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar"
 import { SessionProvider } from "@/components/session-provider"
+import EmailPermissionAlert from "@/components/EmailPermissionAlert"
 import "./globals.css"
 
 export const metadata = {
@@ -21,10 +22,10 @@ export default function RootLayout({
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1541985397530485"
           crossOrigin="anonymous"></script>
       </head>
-      <body className="min-h-screen bg-gray-900 text-white">
-        <SessionProvider>
+      <body className="min-h-screen bg-gray-900 text-white">        <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="dark">
             <Navbar />
+            <EmailPermissionAlert />
             <main>{children}</main>
           </ThemeProvider>
         </SessionProvider>

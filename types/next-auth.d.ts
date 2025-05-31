@@ -14,5 +14,6 @@ declare module "next-auth" {
   interface JWT {
     accessToken?: string
     login?: string
+    email?: string // Adicionado email no JWT
   }
 }

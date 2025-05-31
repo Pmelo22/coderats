@@ -11,12 +11,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { GithubIcon, LogOut, User, BarChart2 } from "lucide-react"
+import { GithubIcon, LogOut, User, BarChart2, Shield } from "lucide-react"
 import { useSession, signIn, signOut } from "next-auth/react"
+import { useState, useEffect } from "react"
 
 export default function Navbar() {
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    // Verificar se usuário tem token de admin no localStorage
+    const adminToken = localStorage.getItem("adminToken")
+    setIsAdmin(!!adminToken)
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-700 bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-gray-900/75">
@@ -61,12 +69,18 @@ export default function Navbar() {
                     <Link href="/profile">
                       <User className="mr-2 h-4 w-4" /> Meu Perfil
                     </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  </DropdownMenuItem>                  <DropdownMenuItem asChild>
                     <Link href="/ranking">
                       <BarChart2 className="mr-2 h-4 w-4" /> Ranking
                     </Link>
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/dashboard">
+                        <Shield className="mr-2 h-4 w-4" /> Administração
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()}>
                     <LogOut className="mr-2 h-4 w-4" /> Sair

@@ -15,6 +15,7 @@ import {
 import { getLeaderboard, LeaderboardUser, updateUserData } from "@/lib/firestore-user"
 import RankingNote from "./note"
 import RankingCriteria from "./criteria"
+import AdminNotices from "@/components/AdminNotices"
 
 export const revalidate = 0
 
@@ -31,9 +32,11 @@ export default async function RankingPage() {
     return { users: leaderboard, lastUpdated }
   })()
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 py-8">
+  return (    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 py-8">
       <div className="max-w-6xl mx-auto">
+        {/* Admin Notices */}
+        <AdminNotices location="ranking" />
+        
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">GitHub Contributions Ranking</h1>
           <Button asChild variant="outline" className="border-gray-600 text-gray-200 hover:bg-gray-700">

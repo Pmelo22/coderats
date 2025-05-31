@@ -57,13 +57,13 @@ export default function UserProfile() {
       return;
     }
 
-    try {
-      console.log("🔄 Atualizando dados do usuário via updateUserData...");
+    try {      console.log("🔄 Atualizando dados do usuário via updateUserData...");
       await updateUserData({
         username,
         token: session.accessToken as string,
         avatar_url: session.user.image,
         name: session.user.name,
+        email: session.user.email,
         force: false, // atualização automática
       });
 
@@ -162,14 +162,14 @@ export default function UserProfile() {
               </Link>
             </Button>
             <h1 className="text-2xl font-bold">Seu Perfil</h1>
-          </div>
-          <Button
+          </div>            <Button
             onClick={async () => {
               const result = await updateUserData({
                 username: session.user.login ?? "",
                 token: session.accessToken ?? "",
                 avatar_url: session.user.image,
                 name: session.user.name,
+                email: session.user.email,
                 force: true, // ⬅️ atualização manual
               });
             }}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useSession, signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
+import AdminNotices from "@/components/AdminNotices"
 
 export default function HomePage() {
   const { data: session, status } = useSession()
@@ -26,9 +27,10 @@ export default function HomePage() {
           transition={{ duration: 6, repeat: Infinity, delay: 2 }}
           style={{ position: "absolute", bottom: "20%", right: "10%" }}
         />
-      </div>
-
-      <div className="max-w-3xl w-full text-center space-y-8 z-10">
+      </div>      <div className="max-w-3xl w-full text-center space-y-8 z-10">
+        {/* Admin Notices */}
+        <AdminNotices location="home" />
+        
         <motion.h1
           className="text-5xl font-bold tracking-tight"
           initial={{ opacity: 0, y: -50 }}
@@ -83,8 +85,7 @@ export default function HomePage() {
           transition={{ duration: 1, delay: 1.5 }}
         >
           <h2 className="text-2xl font-semibold mb-4">How it works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <motion.div
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">            <motion.div
               className="bg-gray-800 p-6 rounded-lg border border-gray-700"
               whileHover={{ scale: 1.05 }}
             >

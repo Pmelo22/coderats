@@ -14,6 +14,7 @@ export interface LeaderboardUser {
   id: string;
   username: string;
   avatar_url?: string;
+  email?: string;
   score: number;
   rank: number;
   commits: number;
@@ -29,9 +30,36 @@ export interface LeaderboardUser {
   isTopCommitter?: boolean;
   isTopPR?: boolean;
   isTopIssue?: boolean;
+  isBanned?: boolean;
+  bannedAt?: string;
+  bannedBy?: string;
   isTopReviewer?: boolean;
   scorePercentage?: number;
   lastSynced?: string;
+  
+  // Múltiplas plataformas
+  connectedPlatforms?: string[];
+  platforms?: {
+    [key: string]: {
+      username: string;
+      token?: string;
+      commits: number;
+      pull_requests: number;
+      issues: number;
+      repositories: number;
+      last_updated?: string;
+    }
+  };
+  
+  // Tokens para APIs
+  github_token?: string;
+  gitlab_token?: string;
+  bitbucket_token?: string;
+  
+  // Usernames por plataforma
+  github_username?: string;
+  gitlab_username?: string;
+  bitbucket_username?: string;
 }
 
 // ------------------ Score Cálculo ------------------
@@ -82,14 +110,16 @@ export async function updateUserData({
   token,
   avatar_url,
   name,
+  email,
   force = false,
 }: {
   username: string;
   token: string;
   avatar_url?: string;
   name?: string;
+  email?: string;
   force?: boolean;
-}) {
+}){
   const userRef = doc(db, "users", username);
   const snapshot = await getDoc(userRef);
   const existing = snapshot.exists() ? snapshot.data() : {};
@@ -125,12 +155,12 @@ export async function updateUserData({
   }
 
   const now = new Date().toISOString();
-
   const userData = {
     id: username,
     username,
     avatar_url,
     name,
+    email,
     score,
     commits: stats.commits,
     pull_requests: stats.pullRequests,

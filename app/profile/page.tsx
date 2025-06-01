@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import ScoreRecommendations from "@/components/score-recommendations";
 import UserRepositories from "@/components/user-repositories";
+import PlatformConnector from "@/components/PlatformConnector";
+import PlatformContributionBadges from "@/components/PlatformContributionBadges";
 
 
 interface UserStats {
@@ -42,48 +44,68 @@ export default function UserProfile() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [synced, setSynced] = useState(false);
-
   function syncData() {
     setSynced(true);
   }
+  
   useEffect(() => {
-  async function loadStats() {
-    if (!session?.accessToken || !session?.user || synced) return;
+    async function loadStats() {
+      if (!session?.user || synced) return;
 
-    const username = session.user.login;
-    if (!username) {
-      console.warn("⚠️ Nome de usuário do GitHub não disponível na sessão.");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      console.log("🔄 Atualizando dados do usuário via updateUserData...");
-      await updateUserData({
-        username,
-        token: session.accessToken as string,
-        avatar_url: session.user.image,
-        name: session.user.name,
-        force: false, // atualização automática
-      });
-
-      const [stats, leaderboard] = await Promise.all([
-        getGitHubUserStats(username, session.accessToken as string),
-        getLeaderboard()
-      ]);
+      // Usar email como identificador consistente
+      const userEmail = session.user.email;
+      const username = session.user.login;
       
-      setStats(stats);
-      setAllUsers(leaderboard);
-      setSynced(true);
-    } catch (error) {
-      console.error("❌ Erro ao buscar dados do GitHub ou atualizar:", error);
-    } finally {
+      if (!userEmail) {
+        console.warn("⚠️ Email do usuário não disponível na sessão.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        console.log("🔄 Carregando dados do usuário...");
+        
+        // Buscar dados salvos no Firebase primeiro
+        const response = await fetch('/api/platforms/connect');
+        const userData = await response.json();
+        
+        let userStats = null;
+        
+        // Se tem dados do GitHub, buscar estatísticas
+        if (username && session.accessToken) {
+          await updateUserData({
+            username,
+            token: session.accessToken as string,
+            avatar_url: session.user.image || undefined,
+            name: session.user.name || undefined,
+            email: userEmail,
+            force: false,
+          });
+
+          const [stats, leaderboard] = await Promise.all([
+            getGitHubUserStats(username, session.accessToken as string),
+            getLeaderboard()
+          ]);
+          
+          userStats = stats;
+          setAllUsers(leaderboard);
+        }
+        
+        setStats(userStats);
+        setSynced(true);
+      } catch (error) {
+        console.error("❌ Erro ao buscar dados do usuário:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (status === 'authenticated') {
+      loadStats();
+    } else if (status === 'unauthenticated') {
       setLoading(false);
     }
-  }
-
-  loadStats();
-}, [session, synced]);
+  }, [session, status, synced]);
 
 
 
@@ -162,14 +184,13 @@ export default function UserProfile() {
               </Link>
             </Button>
             <h1 className="text-2xl font-bold">Seu Perfil</h1>
-          </div>
-          <Button
-            onClick={async () => {
-              const result = await updateUserData({
+          </div>            <Button
+            onClick={async () => {              const result = await updateUserData({
                 username: session.user.login ?? "",
                 token: session.accessToken ?? "",
-                avatar_url: session.user.image,
-                name: session.user.name,
+                avatar_url: session.user.image || undefined,
+                name: session.user.name || undefined,
+                email: session.user.email || undefined,
                 force: true, // ⬅️ atualização manual
               });
             }}
@@ -186,10 +207,15 @@ export default function UserProfile() {
                   <Avatar className="h-32 w-32 mb-4 border-2 border-emerald-500">
                     <AvatarImage src={session.user.image || "/placeholder.svg"} alt={session.user.login} />
                     <AvatarFallback>{session.user.login?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <CardTitle className="text-2xl">@{session.user.login}</CardTitle>
+                  </Avatar>                  <CardTitle className="text-2xl">@{session.user.login}</CardTitle>
                   <CardDescription className="text-gray-400">{session.user.name || ""}</CardDescription>
                   <p className="mt-2 text-sm text-gray-300">{session.user.email}</p>
+                  <div className="mt-3">
+                    <PlatformContributionBadges 
+                      platforms={(stats as any)?.platforms} 
+                      showDetails={true}
+                    />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -229,9 +255,9 @@ export default function UserProfile() {
           </div>
 
           <div className="lg:col-span-3">
-            <Tabs defaultValue="overview">
-              <TabsList className="bg-gray-800 border-gray-700">
+            <Tabs defaultValue="overview">              <TabsList className="bg-gray-800 border-gray-700">
                 <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="platforms">Plataformas</TabsTrigger>
                 <TabsTrigger value="repositories">Repositórios</TabsTrigger>
                 <TabsTrigger value="recommendations">Recomendações</TabsTrigger>
               </TabsList>
@@ -316,7 +342,11 @@ export default function UserProfile() {
                       </div>
                     </div>
                   </CardContent>
-                </Card>
+                </Card>              </TabsContent>
+
+              {/* Plataformas */}
+              <TabsContent value="platforms" className="mt-4">
+                <PlatformConnector />
               </TabsContent>
 
               {/* Repositórios */}

@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Edit, Plus, Save, X } from "lucide-react"
+import { Trash2, Edit, Plus, Save, X, Eye, FileText, Settings, Calendar } from "lucide-react"
 import { motion } from "framer-motion"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface UpdateNote {
   id: string
@@ -35,6 +36,7 @@ export default function AdminUpdatesPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     title: "",
     content: "",
@@ -169,7 +171,6 @@ export default function AdminUpdatesPage() {
       alert("Erro ao deletar atualização")
     }
   }
-
   const resetForm = () => {
     setFormData({
       title: "",
@@ -180,6 +181,40 @@ export default function AdminUpdatesPage() {
     })
     setEditingId(null)
     setShowForm(false)
+    setShowPreview(false)
+  }
+
+  const loadTemplate = () => {
+    const template = `<h3>🆕 Novas Funcionalidades</h3>
+<ul>
+  <li>✅ <strong>Feature 1</strong> - Descrição da funcionalidade</li>
+  <li>✅ <strong>Feature 2</strong> - Descrição da funcionalidade</li>
+</ul>
+
+<h3>🔧 Melhorias Técnicas</h3>
+<ul>
+  <li>✅ <strong>Melhoria 1</strong> - Descrição da melhoria</li>
+  <li>✅ <strong>Melhoria 2</strong> - Descrição da melhoria</li>
+</ul>
+
+<h3>🐛 Correções de Bugs</h3>
+<ul>
+  <li>✅ <strong>Correção 1</strong> - Descrição da correção</li>
+  <li>✅ <strong>Correção 2</strong> - Descrição da correção</li>
+</ul>
+
+<h3>⚡ Performance & Deploy</h3>
+<ul>
+  <li>✅ <strong>Otimização 1</strong> - Descrição da otimização</li>
+  <li>✅ <strong>Build otimizado</strong> - Melhorias no processo de build</li>
+</ul>
+
+<h3>📋 Próximos Passos</h3>
+<ul>
+  <li>🔮 <strong>Funcionalidade futura</strong> - Em desenvolvimento</li>
+  <li>🔧 <strong>Melhoria planejada</strong> - A ser implementada</li>
+</ul>`
+    setFormData({...formData, content: template})
   }
 
   const getTypeColor = (type: string) => {
@@ -221,8 +256,7 @@ export default function AdminUpdatesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white p-4">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
+      <div className="max-w-6xl mx-auto">        <motion.div
           className="flex items-center justify-between mb-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -230,15 +264,88 @@ export default function AdminUpdatesPage() {
         >
           <div>
             <h1 className="text-3xl font-bold">Gerenciar Notas de Atualização</h1>
-            <p className="text-gray-400">Criar e editar atualizações da plataforma</p>
+            <p className="text-gray-400">
+              Criar e editar atualizações da plataforma • {updates.length} {updates.length === 1 ? 'atualização' : 'atualizações'}
+            </p>
           </div>
-          <Button 
-            onClick={() => setShowForm(true)} 
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Atualização
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline"
+              onClick={() => fetchUpdates(token)}
+              className="border-gray-600"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Atualizar Lista
+            </Button>
+            <Button 
+              onClick={() => setShowForm(true)} 
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Atualização
+            </Button>          </div>
+        </motion.div>
+
+        {/* Quick Stats */}
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Total</p>
+                  <p className="text-2xl font-bold">{updates.length}</p>
+                </div>
+                <FileText className="h-8 w-8 text-gray-400" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Funcionalidades</p>
+                  <p className="text-2xl font-bold text-emerald-500">
+                    {updates.filter(u => u.type === 'feature').length}
+                  </p>
+                </div>
+                <Plus className="h-8 w-8 text-emerald-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Correções</p>
+                  <p className="text-2xl font-bold text-red-500">
+                    {updates.filter(u => u.type === 'bugfix').length}
+                  </p>
+                </div>
+                <Settings className="h-8 w-8 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Melhorias</p>
+                  <p className="text-2xl font-bold text-blue-500">
+                    {updates.filter(u => u.type === 'improvement').length}
+                  </p>
+                </div>
+                <Eye className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Form Modal */}
@@ -307,18 +414,69 @@ export default function AdminUpdatesPage() {
                       className="bg-gray-700 border-gray-600"
                     />
                   </div>
-                </div>
+                </div>                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium">Conteúdo</label>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={loadTemplate}
+                      className="text-xs"
+                    >
+                      <Settings className="w-3 h-3 mr-1" />
+                      Usar Template
+                    </Button>
+                  </div>
+                  <Tabs defaultValue="write" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-2">
+                      <TabsTrigger value="write">
+                        <FileText className="w-4 h-4 mr-2" />
+                        Escrever
+                      </TabsTrigger>
+                      <TabsTrigger value="preview">
+                        <Eye className="w-4 h-4 mr-2" />
+                        Pré-visualizar
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="write">
+                      <Textarea
+                        value={formData.content}
+                        onChange={(e) => setFormData({...formData, content: e.target.value})}
+                        rows={12}
+                        required
+                        className="bg-gray-700 border-gray-600 font-mono text-sm"
+                        placeholder={`Descreva as mudanças desta atualização...
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">Conteúdo (HTML permitido)</label>
-                  <Textarea
-                    value={formData.content}
-                    onChange={(e) => setFormData({...formData, content: e.target.value})}
-                    rows={8}
-                    required
-                    className="bg-gray-700 border-gray-600"
-                    placeholder="Descreva as mudanças desta atualização..."
-                  />
+Exemplo de formatação HTML:
+<h3>🆕 Novas Funcionalidades</h3>
+<ul>
+  <li>✅ Funcionalidade A</li>
+  <li>✅ Funcionalidade B</li>
+</ul>
+
+<h3>🔧 Melhorias</h3>
+<ul>
+  <li>✅ Melhoria X</li>
+  <li>✅ Melhoria Y</li>
+</ul>
+
+<h3>🐛 Correções</h3>
+<ul>
+  <li>✅ Correção de bug Z</li>
+</ul>`}
+                      />
+                      <div className="mt-2 text-xs text-gray-400">
+                        💡 Dica: Use HTML para formatação. Emojis são bem-vindos! ✨
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="preview">
+                      <div 
+                        className="bg-gray-700 border border-gray-600 rounded-md p-4 min-h-[300px] prose prose-invert max-w-none prose-sm"
+                        dangerouslySetInnerHTML={{ __html: formData.content || "<p className='text-gray-400'>Nada para pré-visualizar...</p>" }}
+                      />
+                    </TabsContent>
+                  </Tabs>
                 </div>
 
                 <div className="flex gap-2">

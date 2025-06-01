@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -29,7 +30,8 @@ import {
   Edit,
   Trash2,
   AlertTriangle,
-  Settings
+  Settings,
+  FileText
 } from "lucide-react"
 
 interface DashboardStats {
@@ -445,7 +447,48 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
-        )}        {/* Tabs */}
+        )}        {/* Header Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Button
+            asChild
+            variant="outline"
+            className="h-20 border-emerald-600 text-emerald-300 hover:bg-emerald-900/30"
+          >
+            <Link href="/admin/updates" className="flex flex-col items-center gap-2">
+              <FileText className="h-6 w-6" />
+              <span className="text-sm font-medium">Gerenciar Updates</span>
+            </Link>
+          </Button>
+          <Button
+            onClick={() => router.push("/admin/notices")}
+            variant="outline"
+            className="h-20 border-blue-600 text-blue-300 hover:bg-blue-900/30 flex flex-col items-center gap-2"
+            disabled
+          >
+            <MessageSquare className="h-6 w-6" />
+            <span className="text-sm font-medium">Avisos (Ativo)</span>
+          </Button>
+          <Button
+            onClick={() => router.push("/admin/system")}
+            variant="outline"
+            className="h-20 border-purple-600 text-purple-300 hover:bg-purple-900/30 flex flex-col items-center gap-2"
+            disabled
+          >
+            <Settings className="h-6 w-6" />
+            <span className="text-sm font-medium">Sistema (Ativo)</span>
+          </Button>
+          <Button
+            onClick={() => router.push("/admin/analytics")}
+            variant="outline"
+            className="h-20 border-gray-600 text-gray-300 hover:bg-gray-700/30 flex flex-col items-center gap-2"
+            disabled
+          >
+            <Activity className="h-6 w-6" />
+            <span className="text-sm font-medium">Analytics (Em breve)</span>
+          </Button>
+        </div>
+
+        {/* Tabs */}
         <Tabs defaultValue="users" className="space-y-6">
           <TabsList className="bg-gray-800 border-gray-700">
             <TabsTrigger value="users" className="data-[state=active]:bg-blue-600">

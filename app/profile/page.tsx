@@ -44,10 +44,11 @@ export default function UserProfile() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [synced, setSynced] = useState(false);
-
   function syncData() {
     setSynced(true);
-  }  useEffect(() => {
+  }
+  
+  useEffect(() => {
     async function loadStats() {
       if (!session?.user || synced) return;
 

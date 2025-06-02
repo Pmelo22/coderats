@@ -111,29 +111,28 @@ export default function AdminNotices({ location }: AdminNoticesProps) {
   if (visibleNotices.length === 0) return null
 
   return (
-    <div className="space-y-4 mb-6">
+    <div className="absolute left-1/2 z-40" style={{ top: '4.5rem', transform: 'translateX(-50%)', width: '100%', maxWidth: '640px', pointerEvents: 'none' }}>
       {visibleNotices.map((notice) => (
-        <Alert key={notice.id} className={`shadow-lg ${getAlertStyle(notice.type)}`}>
-          <div className={getIconColor(notice.type)}>
-            {getIcon(notice.type)}
+        <div
+          key={notice.id}
+          className={`relative flex items-start gap-4 rounded-lg shadow-lg border ${getAlertStyle(notice.type)} py-4 px-6 w-full animate-fade-in pointer-events-auto`}
+        >
+          <span className={`flex items-center justify-center text-2xl mt-1 ${getIconColor(notice.type)}`}>{getIcon(notice.type)}</span>
+          <div className="flex-1">
+            <div className="font-bold text-base mb-1 tracking-tight text-left">{notice.title}</div>
+            <div className="text-sm text-inherit leading-snug text-left">{notice.message}</div>
           </div>
-          <AlertDescription>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h4 className="font-medium mb-1">{notice.title}</h4>
-                <p className="text-sm">{notice.message}</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-400 hover:text-gray-300 p-1 h-auto ml-4"
-                onClick={() => dismissNotice(notice.id)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-400 hover:text-gray-300 p-1 h-7 w-7 ml-2"
+            onClick={() => dismissNotice(notice.id)}
+            aria-label="Fechar aviso"
+            style={{ pointerEvents: 'auto' }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       ))}
     </div>
   )

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
+import { authOptions } from "../../auth/[...nextauth]/route"
 import { db } from "@/lib/firebase"
 import { doc, updateDoc, getDoc } from "firebase/firestore"
 import { MultiPlatformService } from "@/lib/platforms/multi-platform"
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     const connectedPlatforms = userData.connectedPlatforms || []
     
     if (connectedPlatforms.length === 0) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: "Nenhuma plataforma conectada" 
       }, { status: 400 })
     }
@@ -36,23 +37,23 @@ export async function POST(request: NextRequest) {
     const usernames: any = {}
 
     if (connectedPlatforms.includes('github')) {
-      tokens.github_token = userData.github_token
-      usernames.github = userData.github_username || userData.username
+      tokens.github_token = userData.github_token || session.accessToken
+      usernames.github = userData.github_username || userData.username || session.user.login
     }
-    
-    if (connectedPlatforms.includes('gitlab')) {
-      tokens.gitlab_token = userData.gitlab_token
-      usernames.gitlab = userData.gitlab_username
-    }
-    
-    if (connectedPlatforms.includes('bitbucket')) {
-      tokens.bitbucket_token = userData.bitbucket_token
-      usernames.bitbucket = userData.bitbucket_username
+
+    // Se não há plataformas conectadas formalmente, mas o usuário está logado via OAuth
+    if (connectedPlatforms.length === 0 && session.provider) {
+      const currentProvider = session.provider
+      if (currentProvider === 'github') {
+        tokens.github_token = session.accessToken
+        usernames.github = session.user.login
+        connectedPlatforms.push('github')
+      }
     }
 
     // Buscar estatísticas de todas as plataformas
     const multiPlatformService = new MultiPlatformService(tokens, usernames)
-    const contributions = await multiPlatformService.getUnifiedContributions()
+    const contributions = await multiPlatformService.getUserContributions()
 
     // Calcular score baseado em contribuições unificadas
     const score = (
@@ -62,6 +63,22 @@ export async function POST(request: NextRequest) {
       contributions.total_repositories * 0.5
     )
 
+    // Atualizar plataformas individuais com dados sincronizados
+    const updatedPlatforms = userData.platforms || {}
+    Object.keys(contributions.platforms).forEach(platform => {
+      const platformData = contributions.platforms[platform]
+      if (updatedPlatforms[platform]) {
+        updatedPlatforms[platform] = {
+          ...updatedPlatforms[platform],
+          commits: platformData.commits || 0,
+          pull_requests: platformData.prs || 0,
+          issues: platformData.issues || 0,
+          repositories: platformData.repositories || 0,
+          last_updated: new Date().toISOString()
+        }
+      }
+    })
+
     // Atualizar documento do usuário
     const updateData = {
       commits: contributions.total_commits,
@@ -69,7 +86,7 @@ export async function POST(request: NextRequest) {
       issues: contributions.total_issues,
       projects: contributions.total_repositories,
       score: Math.round(score),
-      platforms: contributions.platforms,
+      platforms: updatedPlatforms,
       updated_at: new Date().toISOString(),
       lastSynced: new Date().toISOString()
     }

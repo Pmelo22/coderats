@@ -28,12 +28,20 @@ export async function POST(request: NextRequest) {
     
     usersSnapshot.docs.forEach((userDoc) => {
       const userData = userDoc.data()
-      
-      // Só reseta se ainda não foi resetado para 2025
+        // Só reseta se ainda não foi resetado para 2025
       if (!userData.resetFor2025June) {
         const userRef = doc(db, 'users', userDoc.id)
         batch.update(userRef, {
-          // Zera as estatísticas
+          // Zera as estatísticas (campos novos)
+          commits: 0,
+          pull_requests: 0,
+          issues: 0,
+          code_reviews: 0,
+          projects: 0,
+          active_days: 0,
+          score: 0,
+          
+          // Zera as estatísticas (campos antigos - compatibilidade)
           totalCommits: 0,
           totalPRs: 0,
           totalIssues: 0,
@@ -41,16 +49,16 @@ export async function POST(request: NextRequest) {
           publicRepos: 0,
           followers: 0,
           following: 0,
-          score: 0,
           
           // Mantém dados pessoais (name, email, login, image, etc.)
           
-          // Marca dados de reset
+          // Marca dados de reset - HOJE como nova data base
           lastResetDate: now.toISOString(),
           resetFor2025June: true,
           
-          // Força nova sincronização
+          // Força nova sincronização que considerará a data de reset
           lastUpdated: new Date(0).toISOString(),
+          updated_at: new Date(0).toISOString(),
           shouldUpdate: true
         })
         resetCount++

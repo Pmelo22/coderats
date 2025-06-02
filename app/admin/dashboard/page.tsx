@@ -870,9 +870,24 @@ export default function AdminDashboard() {
                                 Executar Reset Manualmente
                               </>
                             )}
-                          </Button>
-                        </div>
+                          </Button>                        </div>
                       )}
+                      
+                      {/* Link para configuração avançada de reset */}
+                      <div className="border-t border-gray-600 pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-white font-medium">Configuração Avançada</h4>
+                            <p className="text-gray-400 text-sm">Configure datas personalizadas e gerencie o sistema de reset</p>
+                          </div>
+                          <Link href="/admin/reset">
+                            <Button variant="outline" size="sm" className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10">
+                              <Settings className="h-4 w-4 mr-2" />
+                              Configurar Reset
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </CardContent>

@@ -36,6 +36,16 @@ interface UserStats {
   codeReviews: number;
   diversity: number;
   activeDays: number;
+  platforms?: {
+    [key: string]: {
+      username: string;
+      commits: number;
+      pull_requests: number;
+      issues: number;
+      repositories: number;
+      last_updated?: string;
+    }
+  };
 }
 
 export default function UserProfile() {
@@ -44,11 +54,24 @@ export default function UserProfile() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [synced, setSynced] = useState(false);
+  
   function syncData() {
     setSynced(true);
   }
-  
+
+  // Listen for platform data sync events
   useEffect(() => {
+    const handlePlatformSync = () => {
+      setSynced(false); // This will trigger a reload of stats
+    };
+
+    window.addEventListener('platformDataSynced', handlePlatformSync);
+    return () => {
+      window.removeEventListener('platformDataSynced', handlePlatformSync);
+    };
+  }, []);
+  
+    useEffect(() => {
     async function loadStats() {
       if (!session?.user || synced) return;
 
@@ -64,8 +87,7 @@ export default function UserProfile() {
 
       try {
         console.log("🔄 Carregando dados do usuário...");
-        
-        // Buscar dados salvos no Firebase primeiro
+          // Buscar dados salvos no Firebase primeiro
         const response = await fetch('/api/platforms/connect');
         const userData = await response.json();
         
@@ -82,12 +104,41 @@ export default function UserProfile() {
             force: false,
           });
 
-          const [stats, leaderboard] = await Promise.all([
-            getGitHubUserStats(username, session.accessToken as string),
+          // Buscar dados atualizados do Firestore para obter lastResetDate
+          const updatedResponse = await fetch('/api/platforms/connect');
+          const updatedUserData = await updatedResponse.json();
+          const resetDate = updatedUserData.lastResetDate || null;
+
+          const [githubStats, leaderboard] = await Promise.all([
+            getGitHubUserStats(username, session.accessToken as string, resetDate),
             getLeaderboard()
           ]);
           
-          userStats = stats;
+          // Agregar contribuições de todas as plataformas
+          if (userData.platforms && Object.keys(userData.platforms).length > 0) {
+            const totalContributions = Object.values(userData.platforms).reduce(
+              (acc: { commits: number; pull_requests: number; issues: number; repositories: number }, platform: any) => {
+                acc.commits += platform.commits || 0;
+                acc.pull_requests += platform.pull_requests || 0;
+                acc.issues += platform.issues || 0;
+                acc.repositories += platform.repositories || 0;
+                return acc;
+              },
+              { commits: 0, pull_requests: 0, issues: 0, repositories: 0 }
+            );
+
+            userStats = {
+              ...githubStats,
+              commits: Math.max(githubStats.commits, totalContributions.commits),
+              pullRequests: Math.max(githubStats.pullRequests, totalContributions.pull_requests),
+              issues: Math.max(githubStats.issues, totalContributions.issues),
+              diversity: Math.max(githubStats.diversity, totalContributions.repositories),
+              platforms: userData.platforms
+            };
+          } else {
+            userStats = githubStats;
+          }
+          
           setAllUsers(leaderboard);
         }
         
@@ -209,10 +260,9 @@ export default function UserProfile() {
                     <AvatarFallback>{session.user.login?.substring(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>                  <CardTitle className="text-2xl">@{session.user.login}</CardTitle>
                   <CardDescription className="text-gray-400">{session.user.name || ""}</CardDescription>
-                  <p className="mt-2 text-sm text-gray-300">{session.user.email}</p>
-                  <div className="mt-3">
+                  <p className="mt-2 text-sm text-gray-300">{session.user.email}</p>                  <div className="mt-3">
                     <PlatformContributionBadges 
-                      platforms={(stats as any)?.platforms} 
+                      platforms={stats?.platforms} 
                       showDetails={true}
                     />
                   </div>
@@ -263,11 +313,24 @@ export default function UserProfile() {
               </TabsList>
 
               {/* Visão Geral */}
-              <TabsContent value="overview" className="mt-4">
-                <Card className="bg-gray-800 border-gray-700 mb-6">
+              <TabsContent value="overview" className="mt-4">                <Card className="bg-gray-800 border-gray-700 mb-6">
                   <CardHeader>
-                    <CardTitle>Contribuições</CardTitle>
-                    <CardDescription>{(stats?.commits ?? 0) + (stats?.pullRequests ?? 0) + (stats?.issues ?? 0) + (stats?.codeReviews ?? 0)} contribuições recentes</CardDescription>
+                    <CardTitle className="flex items-center gap-2">
+                      Contribuições
+                      {stats?.platforms && Object.keys(stats.platforms).length > 1 && (
+                        <Badge variant="outline" className="text-xs bg-emerald-600/20 text-emerald-300 border-emerald-500/50">
+                          Multi-plataforma
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription>
+                      {(stats?.commits ?? 0) + (stats?.pullRequests ?? 0) + (stats?.issues ?? 0) + (stats?.codeReviews ?? 0)} contribuições recentes
+                      {stats?.platforms && Object.keys(stats.platforms).length > 1 && (
+                        <span className="text-emerald-400 ml-2">
+                          • Dados agregados de {Object.keys(stats.platforms).length} plataformas
+                        </span>
+                      )}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">

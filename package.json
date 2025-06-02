@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@auth/core": "latest",
-    "@gitbeaker/rest": "^42.5.0",
+
     "@hookform/resolvers": "^3.9.1",
     "@octokit/rest": "latest",
     "@radix-ui/react-accordion": "^1.2.2",

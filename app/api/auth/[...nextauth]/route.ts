@@ -1,7 +1,6 @@
 import NextAuth from "next-auth"
 import GitHubProvider from "next-auth/providers/github"
-import GitLabProvider from "@/lib/auth/gitlab-provider"
-import BitbucketProvider from "@/lib/auth/bitbucket-provider"
+
 import type { NextAuthOptions, Session } from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import type { Account, Profile } from "next-auth"
@@ -13,8 +12,8 @@ const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
       authorization: {
         params: { 
-          scope: "read:user user:email repo read:org",
-          prompt: "consent"
+          scope: "read:user user:email repo read:org"
+          // Removido prompt: "consent" para evitar autorização constante
         },
       },
       profile(profile) {
@@ -27,15 +26,25 @@ const authOptions: NextAuthOptions = {
         }
       },
     }),
-    GitLabProvider({
-      clientId: process.env.GITLAB_CLIENT_ID!,
-      clientSecret: process.env.GITLAB_CLIENT_SECRET!,
-    }),
-    BitbucketProvider({
-      clientId: process.env.BITBUCKET_CLIENT_ID!,
-      clientSecret: process.env.BITBUCKET_CLIENT_SECRET!,
-    }),
+    
   ],
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 dias
+    updateAge: 24 * 60 * 60, // 24 horas
+  },
+  cookies: {
+    sessionToken: {
+      name: 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 30 * 24 * 60 * 60 // 30 dias
+      }
+    }
+  },
   pages: {
     error: '/auth/error', // Página de erro personalizada
   },  callbacks: {
@@ -75,82 +84,146 @@ const authOptions: NextAuthOptions = {
       session.user.web_url = token.web_url as string
       return session
     },    async signIn({ user, account, profile }) {
-      // Verificar se account existe
       if (!account) {
         console.error("❌ Account não fornecido durante o login")
         return false
+      }      const { db } = await import('@/lib/firebase')
+      const { doc, getDoc, updateDoc, setDoc, collection, getDocs, query, where, or } = await import('firebase/firestore')
+
+      const userId = user.email
+      if (!userId) {
+        console.error("❌ Email do usuário não encontrado")
+        return false
       }
 
-      // Verifica se o email foi fornecido para qualquer plataforma
-      if (account.provider === 'gitlab') {
-        if (!user.email || !profile?.email) {
-          console.error("❌ Email não fornecido durante o login do GitLab")
-          return false
+      // Função para verificar se existe usuário similar
+      async function findExistingUser(email: string, username: string): Promise<{ id: string, data: any } | null> {
+        try {
+          // Primeira verificação: buscar por email exato
+          const userRef = doc(db, "users", email)
+          const userDoc = await getDoc(userRef)
+          
+          if (userDoc.exists()) {
+            console.log(`✅ Usuário encontrado por email: ${email}`)
+            return { id: email, data: userDoc.data() }
+          }
+
+          // Segunda verificação: buscar por username nas plataformas conectadas
+          const usersSnapshot = await getDocs(collection(db, "users"))
+          
+          for (const docSnap of usersSnapshot.docs) {
+            const userData = docSnap.data()
+            
+            // Verificar username principal
+            if (userData.username === username || userData.login === username) {
+              console.log(`✅ Usuário encontrado por username principal: ${username}`)
+              return { id: docSnap.id, data: userData }
+            }
+            
+            // Verificar usernames das plataformas conectadas
+            if (userData.platforms) {
+              for (const [platformName, platformData] of Object.entries(userData.platforms)) {
+                if ((platformData as any).username === username) {
+                  console.log(`✅ Usuário encontrado por username da plataforma ${platformName}: ${username}`)
+                  return { id: docSnap.id, data: userData }
+                }
+              }
+            }
+              // Verificar usernames específicos por plataforma
+            const platformUsernames = [
+              userData.github_username
+            ]
+            
+            if (platformUsernames.includes(username)) {
+              console.log(`✅ Usuário encontrado por username específico da plataforma: ${username}`)
+              return { id: docSnap.id, data: userData }
+            }
+          }
+          
+          return null
+        } catch (error) {
+          console.error("❌ Erro ao buscar usuário existente:", error)
+          return null
         }
-        console.log("✅ Login GitLab autorizado com email:", user.email)
-      }
-      
-      // Para GitHub, também verifica email
-      if (account.provider === 'github') {
-        if (!user.email || !profile?.email) {
-          console.error("❌ Email não fornecido durante o login do GitHub")
-          return false
-        }
-        console.log("✅ Login GitHub autorizado com email:", user.email)
-      }
-      
-      // Para Bitbucket, email pode precisar ser buscado separadamente
-      if (account.provider === 'bitbucket') {
-        console.log("✅ Login Bitbucket autorizado")
       }
 
-      // Salvar informações da plataforma no Firebase
       try {
-        const { db } = await import('@/lib/firebase')
-        const { doc, setDoc, getDoc, updateDoc } = await import('firebase/firestore')
+        const currentUsername = (profile as any)?.username || (profile as any)?.login || user.name
         
-        // Use email como ID primário, pois é consistente entre plataformas
-        const userId = user.email
-        if (!userId) {
-          console.error("❌ Email do usuário não encontrado")
-          return false
+        // Verificar se existe usuário similar
+        const existingUser = await findExistingUser(userId, currentUsername)
+        
+        let userRef: any
+        let userData: any
+        
+        if (existingUser) {
+          // Usuário existente encontrado - usar sua conta
+          userRef = doc(db, "users", existingUser.id)
+          userData = existingUser.data
+          console.log(`🔄 Usando conta existente encontrada: ${existingUser.id}`)
+        } else {
+          // Verificar se o documento com email atual existe
+          userRef = doc(db, "users", userId)
+          const userDoc = await getDoc(userRef)
+          userData = userDoc.exists() ? userDoc.data() : null
+        }        const platformData = {
+          username: (profile as any)?.username || (profile as any)?.login || user.name,
+          commits: 0,
+          pull_requests: 0,
+          issues: 0,
+          repositories: 0,
+          last_updated: new Date().toISOString(),
         }
-        
-        const userRef = doc(db, "users", userId)
-        const userDoc = await getDoc(userRef)
-        
-        if (userDoc.exists()) {
-          // Usuário existe - atualizar com nova plataforma
-          const userData = userDoc.data()
+
+        if (userData) {
+          // Usuário existente - atualizar plataformas
           const connectedPlatforms = userData.connectedPlatforms || []
           const platforms = userData.platforms || {}
+
+          // Verificar se a plataforma já está conectada
+          const isAlreadyConnected = connectedPlatforms.includes(account.provider)
           
-          // Adicionar nova plataforma se não existir
-          if (!connectedPlatforms.includes(account.provider)) {
+          if (!isAlreadyConnected) {
             connectedPlatforms.push(account.provider)
+            platforms[account.provider] = platformData
+            
+            console.log(`✅ Nova plataforma ${account.provider} adicionada ao usuário existente`)
+          } else {
+            // Atualizar apenas timestamp se já conectado
+            if (platforms[account.provider]) {
+              platforms[account.provider].last_updated = new Date().toISOString()
+            }
+            console.log(`✅ Login realizado com plataforma já conectada: ${account.provider}`)
           }
-          
-          // Atualizar dados da plataforma
-          platforms[account.provider] = {
-            username: (profile as any)?.username || (profile as any)?.login || user.name,
-            commits: 0,
-            pull_requests: 0,
-            issues: 0,
-            repositories: 0,
-            last_updated: new Date().toISOString()
-          }
-          
+
+          // Aggregate contributions
+          const totalContributions = Object.values(platforms).reduce(
+            (acc: { commits: number; pull_requests: number; issues: number; repositories: number }, platform: any) => {
+              acc.commits += platform.commits || 0;
+              acc.pull_requests += platform.pull_requests || 0;
+              acc.issues += platform.issues || 0;
+              acc.repositories += platform.repositories || 0;
+              return acc;
+            },
+            { commits: 0, pull_requests: 0, issues: 0, repositories: 0 }
+          )
+
           await updateDoc(userRef, {
             connectedPlatforms,
             platforms,
-            [`${account.provider}_username`]: (profile as any)?.username || (profile as any)?.login,
-            updated_at: new Date().toISOString()
+            totalContributions,
+            // Atualizar informações básicas do usuário se necessário
+            name: user.name || userData.name,
+            email: user.email || userData.email, // Garantir que o email seja atualizado
+            avatar_url: user.image || userData.avatar_url,
+            login: currentUsername || userData.login,
+            username: currentUsername || userData.username,
+            updated_at: new Date().toISOString(),
+            last_login: new Date().toISOString(),
           })
-          
-          console.log(`✅ Plataforma ${account.provider} adicionada ao usuário existente`)
         } else {
-          // Novo usuário - criar documento
-          const userData = {
+          // Novo usuário
+          const newUserData = {
             name: user.name,
             email: user.email,
             login: (profile as any)?.login || (profile as any)?.username,
@@ -159,29 +232,22 @@ const authOptions: NextAuthOptions = {
             provider: account.provider,
             connectedPlatforms: [account.provider],
             platforms: {
-              [account.provider]: {
-                username: (profile as any)?.username || (profile as any)?.login || user.name,
-                commits: 0,
-                pull_requests: 0,
-                issues: 0,
-                repositories: 0,
-                last_updated: new Date().toISOString()
-              }
+              [account.provider]: platformData,
             },
-            [`${account.provider}_username`]: (profile as any)?.username || (profile as any)?.login,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            last_login: new Date().toISOString(),
           }
-          
-          await setDoc(userRef, userData)
+
+          await setDoc(userRef, newUserData)
           console.log(`✅ Novo usuário criado com plataforma ${account.provider}`)
         }
+
+        return true
       } catch (error) {
-        console.error("❌ Erro ao salvar dados do usuário:", error)
-        // Não falhar o login por erro de Firebase
+        console.error("❌ Erro durante o processo de login:", error)
+        return false
       }
-      
-      return true
     },
   },
 }

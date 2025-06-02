@@ -48,7 +48,7 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.5 }}
         >
-          Compete com outros desenvolvedores e acompanhe suas contribuições do GitHub, GitLab e Bitbucket em tempo real.
+          Compete com outros desenvolvedores e acompanhe suas contribuições do GitHub em tempo real.
         </motion.p>
 
         <motion.div
@@ -99,7 +99,7 @@ export default function HomePage() {
               whileHover={{ scale: 1.05 }}
             >
               <div className="text-emerald-500 text-xl font-bold mb-2">1. Conecte</div>
-              <p className="text-gray-300">Faça login com GitHub e conecte GitLab/Bitbucket</p>
+              <p className="text-gray-300">Faça login com GitHub para começar</p>
             </motion.div>
             <motion.div
               className="bg-gray-800 p-6 rounded-lg border border-gray-700"

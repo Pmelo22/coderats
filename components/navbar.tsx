@@ -32,7 +32,7 @@ export default function Navbar() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-2">
-              <GithubIcon className="h-6 w-6" />
+              <img src="/icon.png" alt="Logo" className="h-7 w-7 rounded" />
               <span className="text-lg font-bold">Coderats</span>
             </Link>
           </div>

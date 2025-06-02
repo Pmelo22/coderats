@@ -3,14 +3,12 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "../../auth/[...nextauth]/route"
 import { db } from "@/lib/firebase"
 import { doc, updateDoc, getDoc } from "firebase/firestore"
-import { GitLabService } from "@/lib/platforms/gitlab"
-import { BitbucketService } from "@/lib/platforms/bitbucket"
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user?.login && !session?.user?.email) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
@@ -23,38 +21,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar plataforma
-    if (!['github', 'gitlab', 'bitbucket'].includes(platform)) {
+    if (platform !== 'github') {
       return NextResponse.json({ 
         error: "Plataforma não suportada" 
       }, { status: 400 })
     }
+
+    // Verificar se o usuário está autenticado com GitHub
+    const userRef = doc(db, "users", session.user.email)
+    const userDoc = await getDoc(userRef)
+    
+    if (!userDoc.exists()) {
+      return NextResponse.json({ 
+        error: "Usuário não encontrado. Faça login com o GitHub primeiro." 
+      }, { status: 404 })
+    }
+
+    const userData = userDoc.data()
 
     // Verificar se o token é válido
     let isValidToken = false
     let userInfo: any = null
 
     try {
-      if (platform === 'gitlab') {
-        const gitlabService = new GitLabService(token)
-        userInfo = await gitlabService.getUserInfo()
-        isValidToken = userInfo && userInfo.username === username
-      } else if (platform === 'bitbucket') {
-        const bitbucketService = new BitbucketService(token, username)
-        userInfo = await bitbucketService.getUserInfo()
-        isValidToken = userInfo && userInfo.username === username
-      } else if (platform === 'github') {
-        // Para GitHub, apenas verificar se o token é válido
-        const response = await fetch('https://api.github.com/user', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.github+json'
-          }
-        })
-        const userData = await response.json()
-        isValidToken = response.ok && userData.login === username
-      }
+      const response = await fetch('https://api.github.com/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github+json'
+        }
+      })
+      const userData = await response.json()
+      isValidToken = response.ok && userData.login === username
     } catch (error) {
-      console.error(`Erro ao validar token do ${platform}:`, error)
+      console.error(`Erro ao validar token do github:`, error)
       isValidToken = false
     }
 
@@ -62,22 +61,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: "Token inválido ou username não corresponde" 
       }, { status: 400 })
-    }    // Usar email como ID do documento (consistente entre plataformas)
-    const userId = session.user.email
-    if (!userId) {
-      return NextResponse.json({ error: "Email do usuário não encontrado" }, { status: 400 })
-    }
-    
-    const userRef = doc(db, "users", userId)
-    const userDoc = await getDoc(userRef)
-
-    if (!userDoc.exists()) {
-      return NextResponse.json({ 
-        error: "Usuário não encontrado" 
-      }, { status: 404 })
     }
 
-    const userData = userDoc.data()
+    // Atualizar dados do usuário
     const connectedPlatforms = userData.connectedPlatforms || []
     const platforms = userData.platforms || {}
 
@@ -86,38 +72,31 @@ export async function POST(request: NextRequest) {
       connectedPlatforms.push(platform)
     }
 
-    // Atualizar dados da plataforma
-    platforms[platform] = {
-      username,
-      token, // Em produção, considere criptografar
-      commits: 0,
-      pull_requests: 0,
-      issues: 0,
-      repositories: 0,
-      last_updated: new Date().toISOString()
-    }
-
-    // Atualizar campos específicos da plataforma
+    // Atualizar tokens e usernames específicos da plataforma
     const updateData: any = {
       connectedPlatforms,
       platforms,
       [`${platform}_token`]: token,
-      [`${platform}_username`]: username,
-      updated_at: new Date().toISOString()
+      [`${platform}_username`]: username
     }
+
+    // Se for GitHub, atualizar dados principais
+    updateData.github_username = username
+    updateData.username = username // Manter compatibilidade
+    updateData.name = userInfo?.name || userData.name
+    updateData.avatar_url = userInfo?.avatar_url || userData.avatar_url
 
     await updateDoc(userRef, updateData)
 
     return NextResponse.json({ 
-      success: true, 
-      message: `${platform} conectado com sucesso!`,
-      connectedPlatforms
+      success: true,
+      message: `Plataforma ${platform} conectada com sucesso`
     })
 
   } catch (error) {
-    console.error("Erro ao conectar plataforma:", error)
+    console.error('Erro ao conectar plataforma:', error)
     return NextResponse.json({ 
-      error: "Erro interno do servidor" 
+      error: "Erro ao conectar plataforma" 
     }, { status: 500 })
   }
 }
@@ -141,13 +120,17 @@ export async function GET(request: NextRequest) {
         connectedPlatforms: [],
         platforms: {}
       })
-    }
-
-    const userData = userDoc.data()
+    }    const userData = userDoc.data()
     
     return NextResponse.json({
       connectedPlatforms: userData.connectedPlatforms || [],
-      platforms: userData.platforms || {}
+      platforms: userData.platforms || {},
+      // Incluir dados globais do usuário para fallback
+      commits: userData.commits || 0,
+      pull_requests: userData.pull_requests || 0,
+      issues: userData.issues || 0,
+      projects: userData.projects || 0,
+      score: userData.score || 0
     })
 
   } catch (error) {

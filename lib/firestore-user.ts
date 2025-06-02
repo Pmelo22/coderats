@@ -53,13 +53,13 @@ export interface LeaderboardUser {
   
   // Tokens para APIs
   github_token?: string;
-  gitlab_token?: string;
-  bitbucket_token?: string;
+  
+  
   
   // Usernames por plataforma
   github_username?: string;
-  gitlab_username?: string;
-  bitbucket_username?: string;
+  
+  
 }
 
 // ------------------ Score Cálculo ------------------
@@ -138,8 +138,10 @@ export async function updateUserData({
     console.warn("🚫 Limite manual atingido para hoje");
     return;
   }
+  // Verificar se existe data de reset para este usuário
+  const resetDate = existing.lastResetDate || null;
 
-  const stats = await getGitHubUserStats(username, token);
+  const stats = await getGitHubUserStats(username, token, resetDate);
   const score =
     stats.commits * 4 +
     stats.pullRequests * 2.5 +

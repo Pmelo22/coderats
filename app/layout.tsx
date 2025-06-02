@@ -43,9 +43,9 @@ export default function RootLayout({
                 <span className="block text-xs">Equipe Coderats &copy; {new Date().getFullYear()}</span>
                 <span className="block text-xs">
                   Créditos:
-                  <a href="https://github.com/patrickalbuquerque" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400 ml-1">Patrick Albuquerque</a>
+                  <a href="https://github.com/Pmelo22" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400 ml-1">Patrick Albuquerque</a>
                   <span className="mx-1">|</span>
-                  <a href="https://github.com/luisguilherme13" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400">Luis Guilherme</a>
+                  <a href="https://github.com/Luluzao0" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400">Luis Guilherme</a>
                 </span>
               </div>
               {/* Dedicatória */}

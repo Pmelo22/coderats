@@ -27,9 +27,7 @@ import {
   Database,
   MessageSquare,
   Plus,
-  Edit,
   Trash2,
-  AlertTriangle,
   Settings,
   FileText
 } from "lucide-react"
@@ -58,9 +56,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [emailForm, setEmailForm] = useState({ subject: "", message: "" })
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
-  
-  // Estados para gerenciamento de avisos
+  const [message, setMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null)
+    // Estados para gerenciamento de avisos
   const [notices, setNotices] = useState([])
   const [noticeForm, setNoticeForm] = useState({
     title: "",
@@ -70,19 +67,14 @@ export default function AdminDashboard() {
   })
   const [editingNotice, setEditingNotice] = useState<string | null>(null)
   
-  // Estados para sistema de reset
-  const [resetInfo, setResetInfo] = useState<any>(null)
-  
   const router = useRouter()
   useEffect(() => {
     const adminToken = localStorage.getItem("adminToken")
     if (!adminToken) {
       router.push("/admin/login")
       return
-    }
-    loadDashboardData()
+    }    loadDashboardData()
     loadNotices()
-    loadResetInfo()
   }, [])
 
   const loadDashboardData = async () => {
@@ -173,30 +165,69 @@ export default function AdminDashboard() {
         setMessage({ type: "success", text: "Emails enviados com sucesso!" })
       } else {
         throw new Error("Erro ao enviar emails")
-      }
-    } catch (err) {
+      }    } catch (err) {
       setMessage({ type: "error", text: "Erro ao enviar emails" })
     } finally {
       setActionLoading(null)
     }
   }
+
   const handleRefreshAllData = async () => {
     setActionLoading("refresh")
     try {
       const token = localStorage.getItem("adminToken")
+      setMessage({ type: "info", text: "Iniciando atualização completa de todos os usuários com sistema aprimorado..." })
+      
       const response = await fetch("/api/admin/refresh-all", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       })
 
-      if (response.ok) {
+      const data = await response.json()
+
+      if (response.ok && data.success) {
         await loadDashboardData()
-        setMessage({ type: "success", text: "Dados atualizados com sucesso!" })
+        setMessage({ 
+          type: "success", 
+          text: `🎉 Atualização completa realizada! ${data.details.updated} usuários atualizados, ${data.details.errors} erros. Todos os dados foram atualizados.` 
+        })
       } else {
-        throw new Error("Erro ao atualizar dados")
+        throw new Error(data.error || "Erro ao atualizar dados")
       }
     } catch (err) {
       setMessage({ type: "error", text: "Erro ao atualizar dados" })
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleRefreshRanking = async () => {
+    setActionLoading("ranking")
+    try {
+      const token = localStorage.getItem("adminToken")
+      setMessage({ type: "info", text: "Iniciando atualização do ranking com sistema aprimorado de commits..." })
+      
+      const response = await fetch("/api/admin/refresh-ranking", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        await loadDashboardData()
+        setMessage({ 
+          type: "success", 
+          text: `🎉 Ranking atualizado! ${data.details.updated} usuários atualizados, ${data.details.errors} erros. Sistema de commits aprimorado aplicado.` 
+        })
+      } else {
+        throw new Error(data.error || "Erro ao atualizar ranking")
+      }
+    } catch (err) {
+      setMessage({ 
+        type: "error", 
+        text: `Erro ao atualizar ranking: ${err instanceof Error ? err.message : 'Erro desconhecido'}` 
+      })
     } finally {
       setActionLoading(null)
     }
@@ -299,7 +330,6 @@ export default function AdminDashboard() {
       setActionLoading(null)
     }
   }
-
   const handleDeleteNotice = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir este aviso?")) return
 
@@ -317,44 +347,6 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       setMessage({ type: "error", text: "Erro ao excluir aviso" })
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
-  // Funções para sistema de reset
-  const loadResetInfo = async () => {
-    try {
-      const response = await fetch('/api/admin/reset-system')
-      const data = await response.json()
-      setResetInfo(data)
-    } catch (error) {
-      console.error('Erro ao carregar informações de reset:', error)
-    }
-  }
-
-  const handleExecuteReset = async () => {
-    if (!confirm("ATENÇÃO: Isso irá zerar todas as estatísticas dos usuários. Esta ação é irreversível. Tem certeza?")) return
-
-    setActionLoading("reset")
-    try {
-      const response = await fetch('/api/admin/reset-system', {
-        method: 'POST'
-      })
-
-      const result = await response.json()
-      if (response.ok) {
-        setMessage({ 
-          type: "success", 
-          text: `Reset executado com sucesso! ${result.resetCount} usuários foram resetados.` 
-        })
-        await loadResetInfo()
-        await loadDashboardData()
-      } else {
-        setMessage({ type: "error", text: result.message || "Erro ao executar reset" })
-      }
-    } catch (error) {
-      setMessage({ type: "error", text: "Erro ao executar reset do sistema" })
     } finally {
       setActionLoading(null)
     }
@@ -385,12 +377,18 @@ export default function AdminDashboard() {
             <LogOut className="h-4 w-4 mr-2" />
             Sair
           </Button>
-        </div>
-
-        {/* Message Alert */}
+        </div>        {/* Message Alert */}
         {message && (
-          <Alert className={`mb-6 ${message.type === "success" ? "border-green-500/50 bg-green-500/10" : "border-red-500/50 bg-red-500/10"}`}>
-            <AlertDescription className={message.type === "success" ? "text-green-400" : "text-red-400"}>
+          <Alert className={`mb-6 ${
+            message.type === "success" ? "border-green-500/50 bg-green-500/10" : 
+            message.type === "error" ? "border-red-500/50 bg-red-500/10" :
+            "border-blue-500/50 bg-blue-500/10"
+          }`}>
+            <AlertDescription className={
+              message.type === "success" ? "text-green-400" : 
+              message.type === "error" ? "text-red-400" :
+              "text-blue-400"
+            }>
               {message.text}
             </AlertDescription>
           </Alert>
@@ -790,109 +788,6 @@ export default function AdminDashboard() {
           </TabsContent>          {/* System Tab */}
           <TabsContent value="system">
             <div className="space-y-6">
-              {/* Reset System */}
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-red-500" />
-                    Sistema de Reset - Junho 2025
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {resetInfo && (
-                    <div className="p-4 bg-gray-700 rounded-lg">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <p className="text-gray-400 text-sm">Data do Reset</p>
-                          <p className="text-white font-medium">1 de Junho de 2025, 00:00 (Brasil)</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-sm">Status</p>
-                          <Badge variant={resetInfo.shouldReset ? "destructive" : "default"}>
-                            {resetInfo.shouldReset ? "Reset Pendente" : "Aguardando Data"}
-                          </Badge>
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-sm">Dias Restantes</p>
-                          <p className="text-white font-medium">
-                            {resetInfo.daysUntilReset > 0 ? `${resetInfo.daysUntilReset} dias` : "Reset disponível"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-sm">Usuários que serão resetados</p>
-                          <p className="text-white font-medium">{resetInfo.usersToReset}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="border-t border-gray-600 pt-4">
-                        <h4 className="text-white font-medium mb-2">O que será resetado:</h4>
-                        <ul className="text-gray-300 text-sm space-y-1">
-                          <li>• Total de commits</li>
-                          <li>• Total de Pull Requests</li>
-                          <li>• Total de Issues</li>
-                          <li>• Pontuação geral</li>
-                          <li>• Ranking</li>
-                        </ul>
-                        
-                        <h4 className="text-white font-medium mb-2 mt-4">O que será preservado:</h4>
-                        <ul className="text-gray-300 text-sm space-y-1">
-                          <li>• Nome e dados pessoais</li>
-                          <li>• Email</li>
-                          <li>• Login do GitHub</li>
-                          <li>• Foto de perfil</li>
-                        </ul>
-                      </div>
-                      
-                      {resetInfo.shouldReset && (
-                        <div className="border-t border-gray-600 pt-4">
-                          <Alert className="border-red-500/50 bg-red-500/10 mb-4">
-                            <AlertTriangle className="h-4 w-4 text-red-400" />
-                            <AlertDescription className="text-red-400">
-                              <strong>ATENÇÃO:</strong> O reset está programado para ser executado automaticamente. 
-                              Você pode executá-lo manualmente agora se necessário.
-                            </AlertDescription>
-                          </Alert>
-                          
-                          <Button 
-                            onClick={handleExecuteReset}
-                            disabled={actionLoading === "reset"}
-                            variant="destructive"
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            {actionLoading === "reset" ? (
-                              <>
-                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                Executando Reset...
-                              </>
-                            ) : (
-                              <>
-                                <AlertTriangle className="h-4 w-4 mr-2" />
-                                Executar Reset Manualmente
-                              </>
-                            )}
-                          </Button>                        </div>
-                      )}
-                      
-                      {/* Link para configuração avançada de reset */}
-                      <div className="border-t border-gray-600 pt-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-white font-medium">Configuração Avançada</h4>
-                            <p className="text-gray-400 text-sm">Configure datas personalizadas e gerencie o sistema de reset</p>
-                          </div>
-                          <Link href="/admin/reset">
-                            <Button variant="outline" size="sm" className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10">
-                              <Settings className="h-4 w-4 mr-2" />
-                              Configurar Reset
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
               {/* System Operations */}
               <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
@@ -900,11 +795,10 @@ export default function AdminDashboard() {
                     <Settings className="h-5 w-5" />
                     Operações do Sistema
                   </CardTitle>
-                </CardHeader>                <CardContent className="space-y-4">
-                  <div className="p-4 bg-gray-700 rounded-lg">
+                </CardHeader>                <CardContent className="space-y-4">                  <div className="p-4 bg-gray-700 rounded-lg">
                     <h3 className="text-white font-medium mb-2">Atualizar Dados de Todos os Usuários</h3>
                     <p className="text-gray-400 text-sm mb-4">
-                      Esta operação irá atualizar as contribuições e estatísticas de todos os usuários ativos.
+                      Esta operação irá atualizar as contribuições e estatísticas de TODOS os usuários ativos usando o sistema aprimorado de commits. Todos os dados serão atualizados independentemente da sessão.
                     </p>
                     <Button 
                       onClick={handleRefreshAllData}
@@ -920,6 +814,30 @@ export default function AdminDashboard() {
                         <>
                           <Database className="h-4 w-4 mr-2" />
                           Atualizar Todos os Dados
+                        </>
+                      )}
+                    </Button>                  </div>
+
+                  <div className="p-4 bg-gray-700 rounded-lg">
+                    <h3 className="text-white font-medium mb-2">Atualizar Ranking com Sistema Aprimorado</h3>
+                    <p className="text-gray-400 text-sm mb-4">
+                      Esta operação aplicará o novo sistema de contagem de commits com 3 métodos de detecção aprimorados a todos os usuários do ranking.
+                    </p>
+                    <Button 
+                      onClick={handleRefreshRanking}
+                      disabled={actionLoading === "ranking"}
+                      variant="secondary"
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      {actionLoading === "ranking" ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Atualizando Ranking...
+                        </>
+                      ) : (
+                        <>
+                          <TrendingUp className="h-4 w-4 mr-2" />
+                          Atualizar Ranking Aprimorado
                         </>
                       )}
                     </Button>

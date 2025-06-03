@@ -137,11 +137,10 @@ export async function updateUserData({
   if (force && countRefreshesToday(logs) >= 3) {
     console.warn("🚫 Limite manual atingido para hoje");
     return;
-  }
-  // Verificar se existe data de reset para este usuário
-  const resetDate = existing.lastResetDate || null;
+  }  // HARDCODED: Sempre usar 1° de junho de 2025 às 00:00 horário de Brasília
+  const JUNE_FIRST_2025 = '2025-06-01T03:00:00.000Z'; // 03:00 UTC = 00:00 Brasília
 
-  const stats = await getGitHubUserStats(username, token, resetDate);
+  const stats = await getGitHubUserStats(username, token, JUNE_FIRST_2025);
   const score =
     stats.commits * 4 +
     stats.pullRequests * 2.5 +

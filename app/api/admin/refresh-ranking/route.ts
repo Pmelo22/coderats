@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const authorization = req.headers.get("authorization")
     verifyAdminToken(authorization)
 
-    console.log("🚀 Iniciando atualização completa de todos os usuários...")
+    console.log("🚀 Iniciando atualização em massa do ranking com sistema de commits aprimorado...")
 
     // Buscar todos os usuários ativos
     const usersSnapshot = await getDocs(collection(db, "users"))
@@ -34,9 +34,10 @@ export async function POST(req: Request) {
     
     const activeUsers = users.filter(user => !user.isBanned && user.username)
     console.log(`📊 Total de usuários ativos encontrados: ${activeUsers.length}`)
-    
+
     let updated = 0
     let errors = 0
+    let skipped = 0
     const updateResults: Array<{username: string, status: string, commits?: number, error?: string}> = []
 
     // Token administrativo do GitHub para fazer as consultas
@@ -114,11 +115,11 @@ export async function POST(req: Request) {
             updated_at: now,
             lastRank: existingData.rank || existingData.lastRank,
             streak,
-            // Resetar logs de refresh para permitir futuras atualizações
-            refresh_logs: [],
+            // Manter logs de refresh existentes
+            refresh_logs: existingData.refresh_logs || [],
             // Adicionar timestamp desta atualização administrativa
             last_admin_update: now,
-            admin_update_method: "batch_refresh_all"
+            admin_update_method: "batch_refresh_enhanced"
           }
 
           await setDoc(userRef, userData, { merge: true })
@@ -153,27 +154,32 @@ export async function POST(req: Request) {
       }
     }
 
-    console.log("🎉 Atualização completa concluída!")
-    console.log(`📊 Resumo: ${updated} atualizados, ${errors} erros`)
+    console.log("🎉 Atualização em massa concluída!")
+    console.log(`📊 Resumo: ${updated} atualizados, ${errors} erros, ${skipped} ignorados`)
 
     return NextResponse.json({ 
       success: true, 
-      message: `Atualização completa concluída: ${updated} usuários atualizados, ${errors} erros`,
+      message: `Atualização com sistema aprimorado concluída: ${updated} usuários atualizados, ${errors} erros`,
       details: {
         totalUsers: activeUsers.length,
         updated,
         errors,
+        skipped,
         updateResults: updateResults.slice(0, 10), // Primeiros 10 resultados para não sobrecarregar resposta
         timestamp: new Date().toISOString(),
-        method: "enhanced_refresh_all"
+        method: "enhanced_commits_system"
       }
     })
 
   } catch (error) {
-    console.error("Erro ao atualizar dados:", error)
+    console.error("❌ Erro ao atualizar dados do ranking:", error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Acesso negado" },
-      { status: 401 }
+      { 
+        success: false,
+        error: error instanceof Error ? error.message : "Erro interno do servidor",
+        timestamp: new Date().toISOString()
+      },
+      { status: error instanceof Error && error.message.includes("Token") ? 401 : 500 }
     )
   }
 }

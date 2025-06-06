@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { useSession, signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -9,6 +10,7 @@ import AdminNotices from "@/components/AdminNotices"
 
 export default function HomePage() {
   const { data: session, status } = useSession()
+  const { toast } = useToast()
   const router = useRouter()
 
   return (
@@ -62,11 +64,25 @@ export default function HomePage() {
               <Link href="/profile">Ver Seu Perfil</Link>
             </Button>
           ) : (
-            <div className="flex flex-col gap-2">
-              <Button
+            <div className="flex flex-col gap-2">              <Button
                 size="lg"
                 className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-6 text-lg border border-gray-600"
-                onClick={() => signIn("github")}
+                onClick={async () => {
+                  try {
+                    await signIn("github")
+                    toast({
+                      variant: "default",
+                      title: "Redirecionando...",
+                      description: "Conectando com o GitHub.",
+                    })
+                  } catch (error) {
+                    toast({
+                      variant: "destructive",
+                      title: "Erro no login",
+                      description: "Não foi possível conectar com o GitHub. Tente novamente.",
+                    })
+                  }
+                }}
               >
                 Login com GitHub
               </Button>

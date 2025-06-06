@@ -11,7 +11,6 @@ export function middleware(request: NextRequest) {
     const response = NextResponse.next()
     response.headers.set('x-should-reset', 'true')
   }
-
   // Proteger rotas administrativas
   if (request.nextUrl.pathname.startsWith('/admin')) {
     // Permitir acesso à página de login
@@ -19,9 +18,11 @@ export function middleware(request: NextRequest) {
       return NextResponse.next()
     }
 
-    // Para outras rotas admin, verificar se há token no localStorage será feito no client
-    // O middleware apenas redireciona se não há nenhuma autenticação válida
-    return NextResponse.next()
+    // Para outras rotas admin, a verificação do JWT será feita no client-side
+    // Aqui apenas garantimos que as rotas existem
+    const response = NextResponse.next()
+    response.headers.set('x-admin-route', 'true')
+    return response
   }
 
   return NextResponse.next()

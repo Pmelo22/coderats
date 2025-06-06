@@ -27,6 +27,7 @@ import ScoreRecommendations from "@/components/score-recommendations";
 import UserRepositories from "@/components/user-repositories";
 import PlatformConnector from "@/components/PlatformConnector";
 import PlatformContributionBadges from "@/components/PlatformContributionBadges";
+import { toast } from "@/components/ui/use-toast";
 
 
 interface UserStats {
@@ -236,13 +237,18 @@ export default function UserProfile() {
             </Button>
             <h1 className="text-2xl font-bold">Seu Perfil</h1>
           </div>            <Button
-            onClick={async () => {              const result = await updateUserData({
-                username: session.user.login ?? "",
-                token: session.accessToken ?? "",
-                avatar_url: session.user.image || undefined,
-                name: session.user.name || undefined,
-                email: session.user.email || undefined,
-                force: true, // ⬅️ atualização manual
+            onClick={async () => {              
+              const result = await updateUserData({
+                  username: session.user.login ?? "",
+                  token: session.accessToken ?? "",
+                  avatar_url: session.user.image || undefined,
+                  name: session.user.name || undefined,
+                  email: session.user.email || undefined,
+                  force: true, // ⬅️ atualização manual
+                    });
+              toast({
+                  title: "Perfil atualizado",
+                  description: "Seus dados foram atualizados com sucesso.",
               });
             }}
           >

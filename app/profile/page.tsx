@@ -49,6 +49,17 @@ interface UserStats {
   };
 }
 
+// Utilitário para garantir compatibilidade de nomes de propriedades vindas do Firestore ou do hook
+function normalizeStats(stats: any) {
+  if (!stats) return stats;
+  return {
+    ...stats,
+    codeReviews: stats.codeReviews ?? stats.code_reviews ?? 0,
+    diversity: stats.diversity ?? stats.projects ?? 0,
+    activeDays: stats.activeDays ?? stats.active_days ?? 0,
+  };
+}
+
 export default function UserProfile() {
   const { data: session, status } = useSession();
   const { syncUserData, isUpdating } = useUserDataSync();
@@ -77,14 +88,11 @@ export default function UserProfile() {
   useEffect(() => {
     async function loadStats() {
       if (!session?.user || synced) return;
-
       setLoading(true);
-      
       try {
         const result = await syncUserData(false, false);
-        
         if (result) {
-          setStats(result.userStats);
+          setStats(normalizeStats(result.userStats));
           setAllUsers(result.leaderboard);
           setSynced(true);
         }
@@ -166,20 +174,19 @@ export default function UserProfile() {
       </div>
     );
   }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 sm:p-6 lg:p-8 py-6 sm:py-8">
+      <div className="max-w-6xl mx-auto">        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+          <div className="flex items-center w-full sm:w-auto">
             <Button variant="ghost" size="sm" className="mr-4" asChild>
               <Link href="/ranking">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Ranking
               </Link>
             </Button>
-            <h1 className="text-2xl font-bold">Seu Perfil</h1>
-          </div>          <Button
+            <h1 className="text-xl sm:text-2xl font-bold">Seu Perfil</h1>
+          </div>
+          <Button
             onClick={async () => {
               try {
                 const result = await updateUserData({
@@ -205,22 +212,25 @@ export default function UserProfile() {
                 });
               }
             }}
+            className="w-full sm:w-auto flex-shrink-0"
+            variant="outline"
           >
+            <RefreshCw className="h-4 w-4 mr-2" />
             Atualizar agora
           </Button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        </div><div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="lg:col-span-1">
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <div className="flex flex-col items-center text-center">
-                  <Avatar className="h-32 w-32 mb-4 border-2 border-emerald-500">
+                  <Avatar className="h-24 w-24 sm:h-32 sm:w-32 mb-4 border-2 border-emerald-500">
                     <AvatarImage src={session.user.image || "/placeholder.svg"} alt={session.user.login} />
                     <AvatarFallback>{session.user.login?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>                  <CardTitle className="text-2xl">@{session.user.login}</CardTitle>
+                  </Avatar>
+                  <CardTitle className="text-xl sm:text-2xl">@{session.user.login}</CardTitle>
                   <CardDescription className="text-gray-400">{session.user.name || ""}</CardDescription>
-                  <p className="mt-2 text-sm text-gray-300">{session.user.email}</p>                  <div className="mt-3">
+                  <p className="mt-2 text-sm text-gray-300 break-words">{session.user.email}</p>
+                  <div className="mt-3">
                     <PlatformContributionBadges 
                       platforms={stats?.platforms} 
                       showDetails={true}
@@ -233,29 +243,28 @@ export default function UserProfile() {
                   <div className="pt-2 border-t border-gray-700">
                     <h3 className="font-medium mb-2">Estatísticas de Contribuição</h3>
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-gray-900/50 p-3 rounded">
+                      <div className="bg-gray-900/50 p-2 sm:p-3 rounded text-center">
                         <div className="text-gray-400 text-xs">Commits</div>
-                        <div className="font-bold">{stats?.commits ?? 0}</div>
+                        <div className="font-bold text-sm sm:text-base">{stats?.commits ?? 0}</div>
                       </div>
-                      <div className="bg-gray-900/50 p-3 rounded">
+                      <div className="bg-gray-900/50 p-2 sm:p-3 rounded text-center">
                         <div className="text-gray-400 text-xs">Pull Requests</div>
-                        <div className="font-bold text-purple-500">{stats?.pullRequests ?? 0}</div>
+                        <div className="font-bold text-purple-500 text-sm sm:text-base">{stats?.pullRequests ?? 0}</div>
                       </div>
-                      <div className="bg-gray-900/50 p-3 rounded">
+                      <div className="bg-gray-900/50 p-2 sm:p-3 rounded text-center">
                         <div className="text-gray-400 text-xs">Issues</div>
-                        <div className="font-bold text-blue-500">{stats?.issues ?? 0}</div>
-                      </div>
-                      <div className="bg-gray-900/50 p-3 rounded">
+                        <div className="font-bold text-blue-500 text-sm sm:text-base">{stats?.issues ?? 0}</div>
+                      </div>                      <div className="bg-gray-900/50 p-2 sm:p-3 rounded text-center">
                         <div className="text-gray-400 text-xs">Revisões de Código</div>
-                        <div className="font-bold text-amber-500">{stats?.codeReviews ?? 0}</div>
+                        <div className="font-bold text-amber-500 text-sm sm:text-base">{stats?.codeReviews ?? 0}</div>
                       </div>
-                      <div className="bg-gray-900/50 p-3 rounded">
+                      <div className="bg-gray-900/50 p-2 sm:p-3 rounded text-center">
                         <div className="text-gray-400 text-xs">Projetos</div>
-                        <div className="font-bold text-teal-500">{stats?.diversity ?? 0}</div>
+                        <div className="font-bold text-teal-500 text-sm sm:text-base">{stats?.diversity ?? 0}</div>
                       </div>
-                      <div className="bg-gray-900/50 p-3 rounded">
+                      <div className="bg-gray-900/50 p-2 sm:p-3 rounded text-center">
                         <div className="text-gray-400 text-xs">Dias Ativos</div>
-                        <div className="font-bold text-orange-500">{stats?.activeDays ?? 0} dias</div>
+                        <div className="font-bold text-orange-500 text-sm sm:text-base">{stats?.activeDays ?? 0} dias</div>
                       </div>
                     </div>
                   </div>
@@ -264,16 +273,13 @@ export default function UserProfile() {
             </Card>
           </div>
 
-          <div className="lg:col-span-3">
-            <Tabs defaultValue="overview">              <TabsList className="bg-gray-800 border-gray-700">
-                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-                <TabsTrigger value="platforms">Plataformas</TabsTrigger>
-                <TabsTrigger value="repositories">Repositórios</TabsTrigger>
-                <TabsTrigger value="recommendations">Recomendações</TabsTrigger>
-              </TabsList>
-
-              {/* Visão Geral */}
-              <TabsContent value="overview" className="mt-4">                <Card className="bg-gray-800 border-gray-700 mb-6">
+          <div className="lg:col-span-3">            <Tabs defaultValue="overview">              <TabsList className="bg-gray-800 border-gray-700 grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
+                <TabsTrigger value="overview" className="text-xs sm:text-sm">Visão Geral</TabsTrigger>
+                <TabsTrigger value="platforms" className="text-xs sm:text-sm">Plataformas</TabsTrigger>
+                <TabsTrigger value="repositories" className="text-xs sm:text-sm">Repositórios</TabsTrigger>
+                <TabsTrigger value="recommendations" className="text-xs sm:text-sm">Recomendações</TabsTrigger>
+              </TabsList>              {/* Visão Geral */}
+              <TabsContent value="overview" className="mt-4 sm:mt-6">                <Card className="bg-gray-800 border-gray-700 mb-4 sm:mb-6">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       Contribuições
@@ -309,8 +315,7 @@ export default function UserProfile() {
                         </ul>
                       </Card>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-gray-900/50 p-6 rounded-lg">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">                      <div className="bg-gray-900/50 p-4 sm:p-6 rounded-lg">
                         <h3 className="text-lg font-medium mb-4">Resumo de Contribuições</h3>
                         <div className="space-y-4">
                           <div className="flex justify-between items-center">
@@ -342,9 +347,7 @@ export default function UserProfile() {
                             <span className="font-bold">{stats?.codeReviews ?? 0}</span>
                           </div>
                         </div>
-                      </div>
-
-                      <div className="bg-gray-900/50 p-6 rounded-lg">
+                      </div>                      <div className="bg-gray-900/50 p-4 sm:p-6 rounded-lg">
                         <h3 className="text-lg font-medium mb-4">Estatísticas Adicionais</h3>
                         <div className="space-y-4">
                           <div className="flex justify-between items-center">
@@ -365,15 +368,11 @@ export default function UserProfile() {
                       </div>
                     </div>
                   </CardContent>
-                </Card>              </TabsContent>
-
-              {/* Plataformas */}
-              <TabsContent value="platforms" className="mt-4">
+                </Card>              </TabsContent>              {/* Plataformas */}
+              <TabsContent value="platforms" className="mt-4 sm:mt-6">
                 <PlatformConnector />
-              </TabsContent>
-
-              {/* Repositórios */}
-              <TabsContent value="repositories" className="mt-4">
+              </TabsContent>              {/* Repositórios */}
+              <TabsContent value="repositories" className="mt-4 sm:mt-6">
                 <Card className="bg-gray-800 border-gray-700">
                   <CardHeader>
                     <CardTitle>Repositórios</CardTitle>
@@ -384,7 +383,7 @@ export default function UserProfile() {
                   </CardContent>
                 </Card>
               </TabsContent>              {/* Recomendações */}
-              <TabsContent value="recommendations" className="mt-4">
+              <TabsContent value="recommendations" className="mt-4 sm:mt-6">
                 <ScoreRecommendations userData={stats} allUsers={allUsers} />
               </TabsContent>
             </Tabs>

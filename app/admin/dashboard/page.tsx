@@ -1102,19 +1102,17 @@ export default function AdminDashboard() {
       </div>
     )
   }
-
   return (
-    <div className="container mx-auto p-6 space-y-6">      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          {/* Real-time Status Indicator */}
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold">Admin Dashboard</h1>          {/* Real-time Status Indicator */}
           <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full border border-green-200">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-green-700 font-medium">Real-time Active</span>
+            <span className="text-xs sm:text-sm text-green-700 font-medium">Real-time Active</span>
           </div>
           {systemHealth && (
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${
+            <div className={`flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full border ${
               systemHealth.overallStatus === 'healthy' ? 'bg-green-50 border-green-200' :
               systemHealth.overallStatus === 'warning' ? 'bg-yellow-50 border-yellow-200' :
               'bg-red-50 border-red-200'
@@ -1124,7 +1122,7 @@ export default function AdminDashboard() {
                 systemHealth.overallStatus === 'warning' ? 'bg-yellow-500' :
                 'bg-red-500'
               }`}></div>
-              <span className={`text-sm font-medium ${
+              <span className={`text-xs sm:text-sm font-medium ${
                 systemHealth.overallStatus === 'healthy' ? 'text-green-700' :
                 systemHealth.overallStatus === 'warning' ? 'text-yellow-700' :
                 'text-red-700'
@@ -1132,16 +1130,13 @@ export default function AdminDashboard() {
                 System {systemHealth.overallStatus}
               </span>
             </div>
-          )}
-        </div>
-        <Button onClick={handleLogout} variant="outline">
+          )}        </div>
+        <Button onClick={handleLogout} variant="outline" size="sm" className="w-full sm:w-auto">
           <LogOut className="w-4 h-4 mr-2" />
           Sair
-        </Button>      </div>
-
-      {/* Stats Overview */}
+        </Button>      </div>      {/* Stats Overview */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
@@ -1182,30 +1177,26 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
-      )}
-
-      {/* Main Tabs */}
-      <Tabs defaultValue="users" className="space-y-4">        <TabsList>
-          <TabsTrigger value="users">Usuários</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="notifications">Notificações</TabsTrigger>
-          <TabsTrigger value="roles">Permissões</TabsTrigger>
-          <TabsTrigger value="security">Segurança</TabsTrigger>
-          <TabsTrigger value="audit">Auditoria</TabsTrigger>
-          <TabsTrigger value="email">Enviar Email</TabsTrigger>
-          <TabsTrigger value="notices">Avisos</TabsTrigger>
+      )}      {/* Main Tabs */}
+      <Tabs defaultValue="users" className="space-y-4">        <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 h-auto gap-1 sm:gap-2 w-full">
+          <TabsTrigger value="users" className="text-xs sm:text-sm px-2 py-2">Usuários</TabsTrigger>
+          <TabsTrigger value="analytics" className="text-xs sm:text-sm px-2 py-2">Analytics</TabsTrigger>
+          <TabsTrigger value="notifications" className="text-xs sm:text-sm px-2 py-2">Notificações</TabsTrigger>
+          <TabsTrigger value="roles" className="text-xs sm:text-sm px-2 py-2">Permissões</TabsTrigger>
+          <TabsTrigger value="security" className="text-xs sm:text-sm px-2 py-2">Segurança</TabsTrigger>
+          <TabsTrigger value="audit" className="text-xs sm:text-sm px-2 py-2">Auditoria</TabsTrigger>
+          <TabsTrigger value="email" className="text-xs sm:text-sm px-2 py-2">Email</TabsTrigger>
+          <TabsTrigger value="notices" className="text-xs sm:text-sm px-2 py-2">Avisos</TabsTrigger>
           <TabsTrigger value="system">Sistema</TabsTrigger>
-        </TabsList>
-
-        {/* Users Tab */}
+        </TabsList>        {/* Users Tab */}
         <TabsContent value="users" className="space-y-4">
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
             <Search className="w-4 h-4" />
             <Input
               placeholder="Buscar usuários..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
+              className="w-full sm:max-w-sm"
             />
           </div>
 
@@ -1213,34 +1204,32 @@ export default function AdminDashboard() {
             <CardHeader>
               <CardTitle>Gerenciar Usuários</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent>              <div className="space-y-4">
                 {filteredUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-4 border rounded">
-                    <div className="flex items-center space-x-4">
+                  <div key={user.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded gap-4">
+                    <div className="flex items-center space-x-4 min-w-0 flex-1">
                       <img 
-                        src={user.avatar_url || "/default-avatar.png"} 
+                        src={user.avatar_url || "/default-avatar.png"}
                         alt={user.username}
                         className="w-10 h-10 rounded-full"
-                      />
-                      <div>
-                        <p className="font-medium">{user.username}</p>
-                        <p className="text-sm text-gray-500">
+                      />                      <div className="min-w-0">
+                        <p className="font-medium truncate">{user.username}</p>
+                        <p className="text-sm text-gray-500 truncate">
                           Score: {user.score} | Rank: #{user.rank}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
                       {user.isBanned ? (
                         <Badge variant="destructive">Banido</Badge>
                       ) : (
                         <Badge variant="secondary">Ativo</Badge>
-                      )}
-                      <Button
+                      )}                      <Button
                         size="sm"
                         variant={user.isBanned ? "outline" : "destructive"}
                         onClick={() => handleBanUser(user.id, !user.isBanned)}
                         disabled={actionLoading === user.id}
+                        className="w-full sm:w-auto"
                       >
                         {actionLoading === user.id ? (
                           <RefreshCw className="w-4 h-4 animate-spin" />
@@ -1274,10 +1263,9 @@ export default function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {analytics ? (
-                <div className="space-y-8">
+              {analytics ? (                <div className="space-y-6 sm:space-y-8">
                   {/* User Growth Metrics */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <Card>
                       <CardContent className="p-4">
                         <div className="text-2xl font-bold">{analytics.summary.usersLast30Days}</div>

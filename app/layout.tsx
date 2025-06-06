@@ -30,9 +30,8 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark">          <Navbar />
           <EmailPermissionAlert />
           <main>{children}</main>
-          <Toaster />
-          <footer className="w-full mt-16 border-t border-gray-800 bg-gray-900/80 text-gray-300 py-8 px-4 flex flex-col items-center gap-4">
-            <div className="w-full flex flex-col md:flex-row justify-center items-start md:items-start gap-8 md:gap-0 max-w-4xl mx-auto text-center">
+          <Toaster />          <footer className="w-full mt-16 border-t border-gray-800 bg-gray-900/80 text-gray-300 py-8 px-4 flex flex-col items-center gap-4">
+            <div className="w-full flex flex-col md:flex-row justify-center items-center md:items-start gap-8 md:gap-0 max-w-6xl mx-auto text-center">
               {/* Contato */}
               <div className="flex-1 px-2 min-w-[200px]">
                 <span className="block font-semibold text-emerald-400 mb-1">Contato com a equipe</span>
@@ -50,10 +49,10 @@ export default function RootLayout({
                 </span>
               </div>
               {/* Dedicatória */}
-              <div className="flex-1 px-2 min-w-[220px] flex flex-col items-center">
-                <span className="block font-semibold text-emerald-400 mb-1">Dedicatória</span>
-                <span className="block text-xs mb-2">Para a pessoa que mais amo nesse mundo, mesmo distante, amar-te-ei para sempre. L </span>
-                <div className="flex justify-center w-full">
+              <div className="flex-1 px-2 min-w-[280px] flex flex-col items-center justify-center text-center">
+                <span className="block font-semibold text-emerald-400 mb-1 text-center">Dedicatória</span>
+                <span className="block text-xs mb-2 text-center max-w-[260px]">Para a pessoa que mais amo nesse mundo, mesmo distante, amar-te-ei para sempre. L</span>
+                <div className="flex justify-center w-full max-w-[280px]">
                   <iframe
                     style={{ borderRadius: '12px' }}
                     src="https://open.spotify.com/embed/track/4IiviKTCCIJSYsWzxCpqsD?utm_source=generator"

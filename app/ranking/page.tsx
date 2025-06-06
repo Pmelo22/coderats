@@ -78,26 +78,24 @@ export default function RankingPage() {
       </div>
     )
   }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 sm:p-6 lg:p-8 py-6 sm:py-8">
       <div className="max-w-6xl mx-auto">
         {/* Admin Notices */}
         <AdminNotices location="ranking" />
         
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">GitHub Contributions Ranking</h1>
-          <div className="flex gap-2">
-            <Button 
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold">GitHub Contributions Ranking</h1>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">            <Button 
               onClick={handleRefresh}
               disabled={isUpdating}
               variant="outline" 
-              className="border-gray-600 text-gray-200 hover:bg-gray-700"
+              className="border-gray-600 text-gray-200 hover:bg-gray-700 w-full sm:w-auto"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isUpdating ? 'animate-spin' : ''}`} />
               {isUpdating ? 'Atualizando...' : 'Atualizar'}
             </Button>
-            <Button asChild variant="outline" className="border-gray-600 text-gray-200 hover:bg-gray-700">
+            <Button asChild variant="outline" className="border-gray-600 text-gray-200 hover:bg-gray-700 w-full sm:w-auto">
               <Link href="/">Back to Home</Link>
             </Button>
           </div>

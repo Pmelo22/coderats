@@ -81,26 +81,25 @@ export default function UpdatesPage() {
         return "Atualização"
     }
   }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white p-4">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div
-          className="flex items-center gap-4 mb-8"
+          className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 sm:mb-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" asChild className="w-fit">
             <Link href="/">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Notas de Atualização</h1>
-            <p className="text-gray-400">Acompanhe as últimas melhorias da plataforma</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Notas de Atualização</h1>
+            <p className="text-gray-400 text-sm sm:text-base">Acompanhe as últimas melhorias da plataforma</p>
           </div>
         </motion.div>
 
@@ -117,12 +116,11 @@ export default function UpdatesPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          {!loading && updates.length === 0 && (
+        >          {!loading && updates.length === 0 && (
             <Card className="bg-gray-800 border-gray-700">
-              <CardContent className="p-8 text-center">
-                <h3 className="text-xl font-semibold mb-2">Nenhuma atualização ainda</h3>
-                <p className="text-gray-400">
+              <CardContent className="p-6 sm:p-8 text-center">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2">Nenhuma atualização ainda</h3>
+                <p className="text-gray-400 text-sm sm:text-base">
                   As notas de atualização aparecerão aqui quando disponíveis.
                 </p>
               </CardContent>
@@ -135,19 +133,17 @@ export default function UpdatesPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <Card className="bg-gray-800 border-gray-700 hover:border-gray-600 transition-colors">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <Badge className={`${getTypeColor(update.type)} text-white`}>
+            >              <Card className="bg-gray-800 border-gray-700 hover:border-gray-600 transition-colors">
+                <CardHeader className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      <Badge className={`${getTypeColor(update.type)} text-white text-xs sm:text-sm`}>
                         {getTypeLabel(update.type)}
                       </Badge>
-                      <Badge variant="outline" className="border-gray-600 text-gray-300">
+                      <Badge variant="outline" className="border-gray-600 text-gray-300 text-xs sm:text-sm">
                         v{update.version}
                       </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-400">
+                    </div>                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         {new Date(update.date).toLocaleDateString("pt-BR")}
@@ -158,31 +154,29 @@ export default function UpdatesPage() {
                       </div>
                     </div>
                   </div>
-                  <CardTitle className="text-white">{update.title}</CardTitle>
+                  <CardTitle className="text-white text-lg sm:text-xl mt-2">{update.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6 pt-0">
                   <div
-                    className="text-gray-300 prose prose-invert max-w-none"
+                    className="text-gray-300 prose prose-invert prose-sm sm:prose-base max-w-none"
                     dangerouslySetInnerHTML={{ __html: update.content }}
                   />
                 </CardContent>
               </Card>
             </motion.div>
           ))}
-        </motion.div>
-
-        {/* Call to Action */}
+        </motion.div>        {/* Call to Action */}
         {!loading && (
           <motion.div
-            className="mt-12 text-center"
+            className="mt-8 sm:mt-12 text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
           >
-            <p className="text-gray-400 mb-4">
+            <p className="text-gray-400 mb-4 text-sm sm:text-base">
               Tem sugestões ou encontrou algum problema?
             </p>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="w-full sm:w-auto">
               <a href="mailto:suporte@coderats.com">
                 Entrar em Contato
               </a>

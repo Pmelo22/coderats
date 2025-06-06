@@ -128,13 +128,25 @@ export function useUserDataSync() {
           diversity: Math.max(githubStats.diversity, totalContributions.repositories),
           platforms: platformData.platforms
         } as UserStats;
-      }
-
-      const result = {
+      }      const result = {
         userStats,
         leaderboard,
         lastUpdated: new Date().toISOString()
       };
+
+      // Find current user in leaderboard to get updated stats
+      const currentUser = leaderboard.find((user: any) => user.username === username);
+      if (currentUser) {
+        result.userStats = {
+          commits: currentUser.commits,
+          pullRequests: currentUser.pull_requests,
+          issues: currentUser.issues,
+          codeReviews: currentUser.code_reviews,
+          diversity: currentUser.projects,
+          activeDays: currentUser.active_days,
+          platforms: platformData.platforms
+        };
+      }
 
       if (showToast) {
         toast({

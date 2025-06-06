@@ -58,13 +58,17 @@ function ContributionEvolution({ weeks }: { weeks: { week: string, commits: numb
       <div className="flex flex-col gap-2">
         {weeks.map((w, i) => (
           <div key={w.week} className="flex items-center gap-2">
-            <span className="w-16 text-xs text-gray-400">{w.week}</span>
-            <div className="flex-1 bg-gray-700 rounded h-4 relative">
-              <div className="absolute left-0 top-0 h-4 rounded bg-emerald-500" style={{ width: `${Math.min(w.commits * 5, 100)}%` }} />
-              <div className="absolute left-0 top-0 h-4 rounded bg-yellow-400/60" style={{ width: `${Math.min(w.score, 100)}%`, opacity: 0.5 }} />
+            <span className="w-12 sm:w-16 text-xs text-gray-400 flex-shrink-0">{w.week}</span>
+            <div className="flex-1 bg-gray-700 rounded h-3 sm:h-4 relative min-w-0">
+              <div className="absolute left-0 top-0 h-3 sm:h-4 rounded bg-emerald-500" style={{ width: `${Math.min(w.commits * 5, 100)}%` }} />
+              <div className="absolute left-0 top-0 h-3 sm:h-4 rounded bg-yellow-400/60" style={{ width: `${Math.min(w.score, 100)}%`, opacity: 0.5 }} />
             </div>
-            <span className="text-xs text-emerald-400 font-bold">{w.commits} commits</span>
-            <span className="text-xs text-yellow-400 font-bold">{w.score} pts</span>
+            <span className="text-xs text-emerald-400 font-bold flex-shrink-0 hidden sm:inline">{w.commits} commits</span>
+            <span className="text-xs text-yellow-400 font-bold flex-shrink-0 hidden sm:inline">{w.score} pts</span>
+            <div className="flex flex-col text-xs sm:hidden">
+              <span className="text-emerald-400 font-bold">{w.commits}</span>
+              <span className="text-yellow-400 font-bold">{w.score}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -105,25 +109,22 @@ export default async function PublicUserProfile({ params }: UserProfileProps) {
 
   // Chamada para ação
   const cta = getField('cta') || "Buscando projetos, oportunidades ou networking!";
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 py-8">
-      <div className="max-w-4xl mx-auto flex flex-col gap-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 sm:p-6 lg:p-8 py-6 sm:py-8">
+      <div className="max-w-4xl mx-auto flex flex-col gap-6 sm:gap-8">
         {/* Cabeçalho */}
         <Card className="bg-gray-900/80 border-emerald-700 shadow-lg">
-          <CardContent className="flex flex-col md:flex-row items-center gap-6 p-6">
-            <Avatar className="h-32 w-32 border-4 border-emerald-500 shadow-lg">
+          <CardContent className="flex flex-col md:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-6">            <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-emerald-500 shadow-lg">
               <AvatarImage src={getField('avatar_url') || "/placeholder.svg"} alt={username} />
               <AvatarFallback>{username?.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="flex-1 flex flex-col gap-2 items-center md:items-start">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-3xl font-bold">{getField('name') || username}</h1>
-                <span className="text-gray-400 text-lg">@{username}</span>
-                {getField('location') && <span className="ml-2 text-sm text-gray-400">{getField('location')}</span>}
-              </div>
-              {/* Redes sociais e GitHub */}
-              <div className="flex gap-3 mt-2 flex-wrap items-center">
+              <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-bold text-center md:text-left">{getField('name') || username}</h1>
+                <span className="text-gray-400 text-base sm:text-lg">@{username}</span>
+                {getField('location') && <span className="ml-0 sm:ml-2 text-sm text-gray-400">{getField('location')}</span>}
+              </div>              {/* Redes sociais e GitHub */}
+              <div className="flex gap-2 sm:gap-3 mt-2 flex-wrap items-center justify-center md:justify-start">
                 {getField('github') && (
                   <a href={getField('github')} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition" title="GitHub">
                     <Github className="w-6 h-6 text-gray-300 hover:text-emerald-400" />
@@ -145,24 +146,22 @@ export default async function PublicUserProfile({ params }: UserProfileProps) {
                   </a>
                 )}
               </div>              {/* Bio */}
-              {getField('bio') && <p className="text-gray-200 text-base italic mt-1">{getField('bio')}</p>}
+              {getField('bio') && <p className="text-gray-200 text-sm sm:text-base italic mt-1 text-center md:text-left">{getField('bio')}</p>}
               {/* Platform Badges */}
-              <div className="mt-2">
+              <div className="mt-2 flex justify-center md:justify-start">
                 <PlatformContributionBadges 
                   platforms={getField('platforms')} 
                   showDetails={true}
                 />
-              </div>
-              {/* Informações de contato */}
-              <div className="flex gap-2 flex-wrap mt-2">
-                {getField('email') && <Badge variant="outline">{getField('email')}</Badge>}
+              </div>              {/* Informações de contato */}
+              <div className="flex gap-2 flex-wrap mt-2 justify-center md:justify-start">
+                {getField('email') && <Badge variant="outline" className="text-xs sm:text-sm">{getField('email')}</Badge>}
               </div>
               {/* Medalhas e ranking melhorados */}
-              <div className="flex flex-col md:flex-row gap-2 mt-2 w-full">
-                <div className="flex gap-2 overflow-x-auto pb-1 w-full md:w-auto">
-                  {medals.map((m, i) => (
-                    <div key={i} className="group relative">
-                      <Badge className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-800 border-emerald-500 font-semibold cursor-pointer">
+              <div className="flex flex-col gap-2 mt-2 w-full">
+                <div className="flex gap-2 overflow-x-auto pb-1 w-full justify-center md:justify-start">                  {medals.map((m, i) => (
+                    <div key={i} className="group relative flex-shrink-0">
+                      <Badge className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-800 border-emerald-500 font-semibold cursor-pointer whitespace-nowrap">
                         {m.icon}{m.label}
                       </Badge>
                       <span className="absolute left-1/2 -translate-x-1/2 mt-2 px-2 py-1 rounded bg-black text-xs text-white opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 whitespace-nowrap">
@@ -172,71 +171,70 @@ export default async function PublicUserProfile({ params }: UserProfileProps) {
                   ))}
                 </div>
                 {relativeRanking && (
-                  <span className="inline-block bg-gradient-to-r from-emerald-500 to-teal-400 text-white font-bold px-3 py-1 rounded shadow text-xs border border-emerald-700 ml-0 md:ml-4 mt-2 md:mt-0">
-                    {relativeRanking}
-                  </span>
+                  <div className="flex justify-center md:justify-start">
+                    <span className="inline-block bg-gradient-to-r from-emerald-500 to-teal-400 text-white font-bold px-3 py-1 rounded shadow text-xs border border-emerald-700">
+                      {relativeRanking}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
             <ClientProfileActions githubUrl={getField('github')} />
           </CardContent>
-        </Card>
-
-        {/* Destaques e evolução */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        </Card>        {/* Destaques e evolução */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle className="text-xl">Resumo</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Resumo</CardTitle>
               <CardDescription>Estatísticas principais</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col items-center bg-gray-900/60 p-3 rounded">
-                  <Star className="h-6 w-6 text-yellow-400 mb-1" />
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+                <div className="flex flex-col items-center bg-gray-900/60 p-2 sm:p-3 rounded">
+                  <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400 mb-1" />
                   <span className="text-xs text-gray-400">Score</span>
-                  <span className="font-bold text-xl">{getField('score') ?? 0}</span>
+                  <span className="font-bold text-lg sm:text-xl">{getField('score') ?? 0}</span>
                 </div>
-                <div className="flex flex-col items-center bg-gray-900/60 p-3 rounded">
-                  <Calendar className="h-6 w-6 text-orange-400 mb-1" />
+                <div className="flex flex-col items-center bg-gray-900/60 p-2 sm:p-3 rounded">
+                  <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400 mb-1" />
                   <span className="text-xs text-gray-400">Streak</span>
-                  <span className="font-bold text-xl">{getField('streak') ?? 0} dias</span>
+                  <span className="font-bold text-lg sm:text-xl">{getField('streak') ?? 0} dias</span>
                 </div>
-                <div className="flex flex-col items-center bg-gray-900/60 p-3 rounded">
-                  <Users className="h-6 w-6 text-teal-400 mb-1" />
+                <div className="flex flex-col items-center bg-gray-900/60 p-2 sm:p-3 rounded">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-teal-400 mb-1" />
                   <span className="text-xs text-gray-400">Projetos</span>
-                  <span className="font-bold text-xl">{getField('diversity') ?? getField('projects') ?? 0}</span>
+                  <span className="font-bold text-lg sm:text-xl">{getField('diversity') ?? getField('projects') ?? 0}</span>
                 </div>
-                <div className="flex flex-col items-center bg-gray-900/60 p-3 rounded">
-                  <GitCommitHorizontal className="h-6 w-6 text-emerald-400 mb-1" />
+                <div className="flex flex-col items-center bg-gray-900/60 p-2 sm:p-3 rounded">
+                  <GitCommitHorizontal className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-400 mb-1" />
                   <span className="text-xs text-gray-400">Commits</span>
-                  <span className="font-bold text-xl">{getField('commits') ?? 0}</span>
+                  <span className="font-bold text-lg sm:text-xl">{getField('commits') ?? 0}</span>
                 </div>
-                <div className="flex flex-col items-center bg-gray-900/60 p-3 rounded">
-                  <GitPullRequestIcon className="h-6 w-6 text-purple-400 mb-1" />
+                <div className="flex flex-col items-center bg-gray-900/60 p-2 sm:p-3 rounded">
+                  <GitPullRequestIcon className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400 mb-1" />
                   <span className="text-xs text-gray-400">Pull Requests</span>
-                  <span className="font-bold text-xl">{getField('pull_requests') ?? 0}</span>
+                  <span className="font-bold text-lg sm:text-xl">{getField('pull_requests') ?? 0}</span>
                 </div>
-                <div className="flex flex-col items-center bg-gray-900/60 p-3 rounded">
-                  <GitForkIcon className="h-6 w-6 text-blue-400 mb-1" />
+                <div className="flex flex-col items-center bg-gray-900/60 p-2 sm:p-3 rounded">
+                  <GitForkIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400 mb-1" />
                   <span className="text-xs text-gray-400">Issues</span>
-                  <span className="font-bold text-xl">{getField('issues') ?? 0}</span>
+                  <span className="font-bold text-lg sm:text-xl">{getField('issues') ?? 0}</span>
                 </div>
-                <div className="flex flex-col items-center bg-gray-900/60 p-3 rounded">
-                  <Code className="h-6 w-6 text-amber-400 mb-1" />
+                <div className="flex flex-col items-center bg-gray-900/60 p-2 sm:p-3 rounded">
+                  <Code className="h-5 w-5 sm:h-6 sm:w-6 text-amber-400 mb-1" />
                   <span className="text-xs text-gray-400">Code Reviews</span>
-                  <span className="font-bold text-xl">{getField('code_reviews') ?? 0}</span>
+                  <span className="font-bold text-lg sm:text-xl">{getField('code_reviews') ?? 0}</span>
                 </div>
-                <div className="flex flex-col items-center bg-gray-900/60 p-3 rounded">
-                  <Calendar className="h-6 w-6 text-gray-400 mb-1" />
+                <div className="flex flex-col items-center bg-gray-900/60 p-2 sm:p-3 rounded">
+                  <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400 mb-1" />
                   <span className="text-xs text-gray-400">Dias Ativos</span>
-                  <span className="font-bold text-xl">{getField('active_days') ?? 0}</span>
+                  <span className="font-bold text-lg sm:text-xl">{getField('active_days') ?? 0}</span>
                 </div>
               </div>
             </CardContent>
-          </Card>
-          <Card className="bg-gray-800 border-gray-700">
+          </Card>          <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle className="text-xl">Evolução nas últimas 4 semanas</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Evolução nas últimas 4 semanas</CardTitle>
               <CardDescription>Commits e score por semana</CardDescription>
             </CardHeader>
             <CardContent>
@@ -248,7 +246,7 @@ export default async function PublicUserProfile({ params }: UserProfileProps) {
         {/* Repositórios */}
         <Card className="bg-gray-800 border-gray-700">
           <CardHeader>
-            <CardTitle className="text-xl">Repositórios em destaque</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">Repositórios em destaque</CardTitle>
             <CardDescription>Até 5 repositórios que mais contribuiu</CardDescription>
           </CardHeader>
           <CardContent>
@@ -258,8 +256,8 @@ export default async function PublicUserProfile({ params }: UserProfileProps) {
 
         {/* Chamada para ação */}
         <Card className="bg-gray-900/80 border-emerald-700">
-          <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 p-6">
-            <div className="text-lg font-semibold text-emerald-400">{cta}</div>
+          <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 sm:p-6">
+            <div className="text-base sm:text-lg font-semibold text-emerald-400 text-center sm:text-left">{cta}</div>
             <Link href="/ranking">
               <Button variant="outline" className="border-emerald-500 hover:bg-emerald-900/40 transition">Ver Ranking de Desenvolvedores</Button>
             </Link>

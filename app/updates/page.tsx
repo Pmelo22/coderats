@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,22 +20,33 @@ interface UpdateNote {
 }
 
 export default function UpdatesPage() {
+  const { toast } = useToast()
   const [updates, setUpdates] = useState<UpdateNote[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchUpdates()
   }, [])
-
   const fetchUpdates = async () => {
     try {
       const response = await fetch("/api/admin/updates")
       if (response.ok) {
         const data = await response.json()
         setUpdates(data.updates || [])
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar atualizações",
+          description: "Não foi possível carregar as notas de atualização.",
+        })
       }
     } catch (error) {
       console.error("Erro ao carregar atualizações:", error)
+      toast({
+        variant: "destructive",
+        title: "Erro de conexão",
+        description: "Falha na conexão com o servidor. Tente novamente.",
+      })
     } finally {
       setLoading(false)
     }

@@ -20,6 +20,7 @@ import {
   TrendingUp
 } from "lucide-react"
 import { AdminNotification } from "@/lib/notifications"
+import { useToast } from "@/hooks/use-toast"
 
 interface NotificationsPanelProps {
   onNotificationRead?: () => void
@@ -86,6 +87,7 @@ export default function NotificationsPanel({ onNotificationRead }: Notifications
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     loadNotifications()
@@ -111,7 +113,6 @@ export default function NotificationsPanel({ onNotificationRead }: Notifications
       clearInterval(interval)
     }
   }, [])
-
   const loadNotifications = async () => {
     try {
       const token = localStorage.getItem("adminToken")
@@ -130,11 +131,15 @@ export default function NotificationsPanel({ onNotificationRead }: Notifications
     } catch (err) {
       console.error("Error loading notifications:", err)
       setError("Failed to load notifications")
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar notificações",
+        description: "Não foi possível carregar as notificações. Tente novamente."
+      })
     } finally {
       setLoading(false)
     }
   }
-
   const markAsRead = async (notificationId: string) => {
     try {
       const token = localStorage.getItem("adminToken")
@@ -160,16 +165,32 @@ export default function NotificationsPanel({ onNotificationRead }: Notifications
         )
         setUnreadCount(prev => Math.max(0, prev - 1))
         onNotificationRead?.()
+        toast({
+          title: "Notificação marcada como lida",
+          description: "A notificação foi marcada como lida com sucesso."
+        })
+      } else {
+        throw new Error("Failed to mark notification as read")
       }
     } catch (err) {
       console.error("Error marking notification as read:", err)
+      toast({
+        variant: "destructive",
+        title: "Erro ao marcar notificação",
+        description: "Não foi possível marcar a notificação como lida."
+      })
     }
   }
-
   const markAllAsRead = async () => {
     try {
       const unreadNotifications = notifications.filter(n => !n.isRead)
-      if (unreadNotifications.length === 0) return
+      if (unreadNotifications.length === 0) {
+        toast({
+          title: "Nenhuma notificação não lida",
+          description: "Todas as notificações já foram lidas."
+        })
+        return
+      }
 
       const token = localStorage.getItem("adminToken")
       const response = await fetch("/api/admin/notifications", {
@@ -189,9 +210,20 @@ export default function NotificationsPanel({ onNotificationRead }: Notifications
         )
         setUnreadCount(0)
         onNotificationRead?.()
+        toast({
+          title: "Todas as notificações marcadas como lidas",
+          description: `${unreadNotifications.length} notificações foram marcadas como lidas.`
+        })
+      } else {
+        throw new Error("Failed to mark all notifications as read")
       }
     } catch (err) {
       console.error("Error marking all notifications as read:", err)
+      toast({
+        variant: "destructive",
+        title: "Erro ao marcar notificações",
+        description: "Não foi possível marcar todas as notificações como lidas."
+      })
     }
   }
 

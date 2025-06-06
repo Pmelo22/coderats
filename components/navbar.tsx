@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,6 +18,7 @@ import { useState, useEffect } from "react"
 
 export default function Navbar() {
   const { data: session, status } = useSession()
+  const { toast } = useToast()
   const isAuthenticated = status === "authenticated"
   const [isAdmin, setIsAdmin] = useState(false)
 
@@ -82,13 +84,48 @@ export default function Navbar() {
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()}>
+                  <DropdownMenuItem 
+                    onClick={async () => {
+                      try {
+                        await signOut()
+                        toast({
+                          variant: "success",
+                          title: "Logout realizado",
+                          description: "Você foi desconectado com sucesso.",
+                        })
+                      } catch (error) {
+                        toast({
+                          variant: "destructive",
+                          title: "Erro no logout",
+                          description: "Não foi possível desconectar. Tente novamente.",
+                        })
+                      }
+                    }}
+                  >
                     <LogOut className="mr-2 h-4 w-4" /> Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => signIn("github")}>
+              <Button 
+                className="bg-emerald-600 hover:bg-emerald-700" 
+                onClick={async () => {
+                  try {
+                    await signIn("github")
+                    toast({
+                      variant: "success",
+                      title: "Redirecionando...",
+                      description: "Conectando com o GitHub.",
+                    })
+                  } catch (error) {
+                    toast({
+                      variant: "destructive",
+                      title: "Erro no login",
+                      description: "Não foi possível conectar com o GitHub. Tente novamente.",
+                    })
+                  }
+                }}
+              >
                 <GithubIcon className="mr-2 h-4 w-4" />
                 Login with GitHub
               </Button>

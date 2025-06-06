@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession, signIn } from 'next-auth/react'
+import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -36,6 +37,7 @@ interface ConnectedPlatform {
 
 export default function PlatformConnector() {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -58,28 +60,45 @@ export default function PlatformConnector() {
       }
       if (data.platforms) {
         setPlatforms(data.platforms)
-      }
-    } catch (error) {
+      }    } catch (error) {
       console.error('Erro ao buscar plataformas:', error)
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar plataformas",
+        description: "Não foi possível carregar suas plataformas conectadas.",
+      })
     }
   }
-
   const handleConnect = async () => {
     setLoading(true)
     setError(null)
     setSuccess(null)
     try {
       await signIn('github')
+      toast({
+        variant: "success",
+        title: "Conectando ao GitHub",
+        description: "Redirecionando para autenticação...",
+      })
     } catch (error) {
       setError('Erro ao conectar plataforma')
       console.error('Erro ao conectar:', error)
+      toast({
+        variant: "destructive",
+        title: "Erro na conexão",
+        description: "Não foi possível conectar ao GitHub. Tente novamente.",
+      })
     } finally {
       setLoading(false)
     }
   }
-
   const handleDisconnect = async () => {
     setError('Não é possível desconectar o GitHub, pois é a plataforma principal')
+    toast({
+      variant: "warning",
+      title: "Ação não permitida",
+      description: "Não é possível desconectar o GitHub, pois é a plataforma principal.",
+    })
   }
 
   if (!session) {

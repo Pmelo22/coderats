@@ -57,7 +57,7 @@ export async function createNotification(notification: Omit<AdminNotification, '
 }
 
 // Get notifications for admin
-export async function getNotifications(adminId?: string, limit?: number): Promise<AdminNotification[]> {
+export async function getNotifications(adminId?: string, maxResults?: number): Promise<AdminNotification[]> {
   try {
     let q = query(
       collection(db, 'admin_notifications'),
@@ -72,8 +72,8 @@ export async function getNotifications(adminId?: string, limit?: number): Promis
       )
     }
 
-    if (limit) {
-      q = query(q, limit(limit))
+    if (maxResults) {
+      q = query(q, limit(maxResults))
     }
 
     const snapshot = await getDocs(q)

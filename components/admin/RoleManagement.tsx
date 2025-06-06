@@ -23,6 +23,7 @@ import {
   Info
 } from "lucide-react"
 import { AdminRole, AdminUser, PERMISSIONS } from "@/lib/rbac"
+import { useToast } from "@/hooks/use-toast"
 
 interface RoleManagementProps {
   onRoleChanged?: () => void
@@ -34,6 +35,7 @@ export default function RoleManagement({ onRoleChanged }: RoleManagementProps) {
   const [userPermissions, setUserPermissions] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null)
+  const { toast } = useToast()
   
   // Create admin form
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -47,7 +49,6 @@ export default function RoleManagement({ onRoleChanged }: RoleManagementProps) {
     loadRoles()
     loadCurrentUser()
   }, [])
-
   const loadRoles = async () => {
     try {
       const token = localStorage.getItem("adminToken")
@@ -64,9 +65,13 @@ export default function RoleManagement({ onRoleChanged }: RoleManagementProps) {
     } catch (err) {
       console.error("Error loading roles:", err)
       setMessage({ type: "error", text: "Erro ao carregar funções" })
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar funções",
+        description: "Não foi possível carregar as funções administrativas."
+      })
     }
   }
-
   const loadCurrentUser = async () => {
     try {
       const token = localStorage.getItem("adminToken")
@@ -87,11 +92,15 @@ export default function RoleManagement({ onRoleChanged }: RoleManagementProps) {
       }
     } catch (err) {
       console.error("Error loading current user:", err)
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar usuário",
+        description: "Não foi possível carregar as informações do usuário atual."
+      })
     } finally {
       setLoading(false)
     }
   }
-
   const initializeRBAC = async () => {
     try {
       const token = localStorage.getItem("adminToken")
@@ -102,6 +111,10 @@ export default function RoleManagement({ onRoleChanged }: RoleManagementProps) {
 
       if (response.ok) {
         setMessage({ type: "success", text: "Sistema RBAC inicializado com sucesso!" })
+        toast({
+          title: "Sistema RBAC inicializado",
+          description: "O sistema de controle de acesso foi configurado com sucesso."
+        })
         await loadRoles()
       } else {
         throw new Error("Failed to initialize RBAC")
@@ -109,12 +122,21 @@ export default function RoleManagement({ onRoleChanged }: RoleManagementProps) {
     } catch (err) {
       console.error("Error initializing RBAC:", err)
       setMessage({ type: "error", text: "Erro ao inicializar sistema RBAC" })
+      toast({
+        variant: "destructive",
+        title: "Erro ao inicializar RBAC",
+        description: "Não foi possível inicializar o sistema de controle de acesso."
+      })
     }
   }
-
   const createAdmin = async () => {
     if (!createForm.username || !createForm.email || !createForm.roleId) {
       setMessage({ type: "error", text: "Todos os campos são obrigatórios" })
+      toast({
+        variant: "destructive",
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos para criar um administrador."
+      })
       return
     }
 
@@ -134,6 +156,10 @@ export default function RoleManagement({ onRoleChanged }: RoleManagementProps) {
 
       if (response.ok) {
         setMessage({ type: "success", text: "Administrador criado com sucesso!" })
+        toast({
+          title: "Administrador criado",
+          description: `O usuário ${createForm.username} foi criado com sucesso.`
+        })
         setShowCreateForm(false)
         setCreateForm({ username: '', email: '', roleId: '' })
         onRoleChanged?.()
@@ -143,7 +169,13 @@ export default function RoleManagement({ onRoleChanged }: RoleManagementProps) {
       }
     } catch (err) {
       console.error("Error creating admin:", err)
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Erro ao criar administrador" })
+      const errorMessage = err instanceof Error ? err.message : "Erro ao criar administrador"
+      setMessage({ type: "error", text: errorMessage })
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar administrador",
+        description: errorMessage
+      })
     }
   }
 

@@ -64,6 +64,7 @@ import NotificationsPanel from "@/components/admin/NotificationsPanel"
 import RoleManagement from "@/components/admin/RoleManagement"
 import SecurityMonitoring from "@/components/admin/SecurityMonitoring"
 import { NotificationSystem, NotificationTemplates } from "@/lib/notifications"
+import { useToast } from "@/hooks/use-toast"
 
 ChartJS.register(
   CategoryScale,
@@ -182,6 +183,7 @@ interface SystemHealth {
 }
 
 export default function AdminDashboard() {
+  const { toast } = useToast()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
@@ -189,7 +191,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [emailForm, setEmailForm] = useState({ subject: "", message: "" })
-  const [message, setMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null)
   
   // Estados para gerenciamento de avisos
   const [notices, setNotices] = useState<Notice[]>([])
@@ -537,34 +538,45 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem("adminToken")
       const response = await fetch("/api/admin/ban-user", {
-        method: "POST",
-        headers: {
+        method: "POST",        headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ userId, ban })
       })
-
+      
       if (response.ok) {
-        setMessage({ 
-          type: "success", 
-          text: ban ? "Usuário banido com sucesso!" : "Ban removido com sucesso!" 
+        toast({
+          title: "Sucesso",
+          description: ban ? "Usuário banido com sucesso!" : "Ban removido com sucesso!",
+          variant: "default"
         })
         await loadDashboardData()
         await logAdminAction(ban ? "user_banned" : "user_unbanned", userId, "user", { ban })
       } else {
-        setMessage({ type: "error", text: "Erro ao processar ação" })
+        toast({
+          title: "Erro",
+          description: "Erro ao processar ação",
+          variant: "destructive"
+        })
       }
     } catch (err) {
-      setMessage({ type: "error", text: "Erro ao processar ação" })
+      toast({
+        title: "Erro",
+        description: "Erro ao processar ação",
+        variant: "destructive"
+      })
     } finally {
       setActionLoading(null)
     }
   }
-
   const handleSendEmail = async () => {
     if (!emailForm.subject || !emailForm.message) {
-      setMessage({ type: "error", text: "Assunto e mensagem são obrigatórios" })
+      toast({
+        title: "Erro",
+        description: "Assunto e mensagem são obrigatórios",
+        variant: "destructive"
+      })
       return
     }
 
@@ -581,14 +593,26 @@ export default function AdminDashboard() {
       })
 
       if (response.ok) {
-        setMessage({ type: "success", text: "Email enviado com sucesso!" })
+        toast({
+          title: "Sucesso",
+          description: "Email enviado com sucesso!",
+          variant: "default"
+        })
         setEmailForm({ subject: "", message: "" })
         await logAdminAction("bulk_email_sent", undefined, "email", emailForm)
       } else {
-        setMessage({ type: "error", text: "Erro ao enviar email" })
+        toast({
+          title: "Erro",
+          description: "Erro ao enviar email",
+          variant: "destructive"
+        })
       }
     } catch (err) {
-      setMessage({ type: "error", text: "Erro ao enviar email" })
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar email",
+        variant: "destructive"
+      })
     } finally {
       setActionLoading(null)
     }
@@ -602,17 +626,29 @@ export default function AdminDashboard() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       })
-
+      
       if (response.ok) {
-        setMessage({ type: "success", text: "Dados atualizados com sucesso!" })
+        toast({
+          title: "Sucesso",
+          description: "Dados atualizados com sucesso!",
+          variant: "default"
+        })
         await loadDashboardData()
         await loadAnalytics()
         await logAdminAction("system_refresh_all")
       } else {
-        setMessage({ type: "error", text: "Erro ao atualizar dados" })
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar dados",
+          variant: "destructive"
+        })
       }
     } catch (err) {
-      setMessage({ type: "error", text: "Erro ao atualizar dados" })
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar dados",
+        variant: "destructive"
+      })
     } finally {
       setActionLoading(null)
     }
@@ -626,25 +662,40 @@ export default function AdminDashboard() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       })
-
+      
       if (response.ok) {
-        setMessage({ type: "success", text: "Ranking atualizado com sucesso!" })
+        toast({
+          title: "Sucesso",
+          description: "Ranking atualizado com sucesso!",
+          variant: "default"
+        })
         await loadDashboardData()
         await loadAnalytics()
         await logAdminAction("system_refresh_ranking")
       } else {
-        setMessage({ type: "error", text: "Erro ao atualizar ranking" })
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar ranking",
+          variant: "destructive"
+        })
       }
     } catch (err) {
-      setMessage({ type: "error", text: "Erro ao atualizar ranking" })
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar ranking",
+        variant: "destructive"
+      })
     } finally {
       setActionLoading(null)
     }
   }
-
   const handleCreateNotice = async () => {
     if (!noticeForm.title || !noticeForm.message) {
-      setMessage({ type: "error", text: "Título e mensagem são obrigatórios" })
+      toast({
+        title: "Erro",
+        description: "Título e mensagem são obrigatórios",
+        variant: "destructive"
+      })
       return
     }
 
@@ -664,19 +715,31 @@ export default function AdminDashboard() {
       })
 
       if (response.ok) {
-        setMessage({ type: "success", text: "Aviso criado com sucesso!" })
+        toast({
+          title: "Sucesso",
+          description: "Aviso criado com sucesso!",
+          variant: "default"
+        })
         setNoticeForm({ title: "", message: "", type: "info", location: "home" })
         await loadNotices()
         await logAdminAction("notice_created", undefined, "notice", noticeForm)
       } else {
-        setMessage({ type: "error", text: "Erro ao criar aviso" })
+        toast({
+          title: "Erro",
+          description: "Erro ao criar aviso",
+          variant: "destructive"
+        })
       }
     } catch (err) {
-      setMessage({ type: "error", text: "Erro ao criar aviso" })
-    } finally {
+      toast({
+        title: "Erro",
+        description: "Erro ao criar aviso",
+        variant: "destructive"
+      })    } finally {
       setActionLoading(null)
     }
   }
+
   const handleDeleteNotice = async (id: string) => {
     setActionLoading(id)
     try {
@@ -691,28 +754,47 @@ export default function AdminDashboard() {
       })
 
       if (response.ok) {
-        setMessage({ type: "success", text: "Aviso excluído com sucesso!" })
+        toast({
+          title: "Sucesso",
+          description: "Aviso excluído com sucesso!",
+          variant: "default"
+        })
         await loadNotices()
         await logAdminAction("notice_deleted", id, "notice")
       } else {
-        setMessage({ type: "error", text: "Erro ao excluir aviso" })
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir aviso",
+          variant: "destructive"
+        })
       }
     } catch (err) {
-      setMessage({ type: "error", text: "Erro ao excluir aviso" })
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir aviso",
+        variant: "destructive"
+      })
     } finally {
       setActionLoading(null)
     }
   }
-
   const handleImportData = async () => {
     if (!importFile) {
-      setMessage({ type: "error", text: "Selecione um arquivo para importar" })
+      toast({
+        title: "Erro",
+        description: "Selecione um arquivo para importar",
+        variant: "destructive"
+      })
       return
     }
 
     const allowedTypes = ['application/json', 'text/csv', 'application/vnd.ms-excel']
     if (!allowedTypes.includes(importFile.type)) {
-      setMessage({ type: "error", text: "Formato de arquivo não suportado. Use JSON ou CSV." })
+      toast({
+        title: "Erro",
+        description: "Formato de arquivo não suportado. Use JSON ou CSV.",
+        variant: "destructive"
+      })
       return
     }
 
@@ -732,9 +814,10 @@ export default function AdminDashboard() {
 
       if (response.ok) {
         const result = await response.json()
-        setMessage({ 
-          type: "success", 
-          text: `Dados importados com sucesso! ${result.imported || 0} registros processados.` 
+        toast({
+          title: "Sucesso",
+          description: `Dados importados com sucesso! ${result.imported || 0} registros processados.`,
+          variant: "default"
         })
         setImportFile(null)
         await loadDashboardData()
@@ -746,14 +829,22 @@ export default function AdminDashboard() {
         })
       } else {
         const error = await response.json()
-        setMessage({ type: "error", text: error.message || "Erro ao importar dados" })
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao importar dados",
+          variant: "destructive"
+        })
       }
     } catch (err) {
-      setMessage({ type: "error", text: "Erro ao processar arquivo de importação" })
-    } finally {
+      toast({
+        title: "Erro",
+        description: "Erro ao processar arquivo de importação",
+        variant: "destructive"
+      })    } finally {
       setImportLoading(false)
     }
   }
+
   const handleBackupData = async (format: 'json' | 'csv') => {
     setActionLoading(`backup-${format}`)
     try {
@@ -761,25 +852,37 @@ export default function AdminDashboard() {
       const response = await fetch(`/api/admin/backup?format=${format}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-
+      
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `coderats-backup-${new Date().toISOString().split('T')[0]}.${format}`
-        document.body.appendChild(a)
-        a.click()
+        const downloadLink = document.createElement('a')
+        downloadLink.href = url
+        downloadLink.download = `coderats-backup-${new Date().toISOString().split('T')[0]}.${format}`
+        document.body.appendChild(downloadLink)
+        downloadLink.click()
         window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
+        document.body.removeChild(downloadLink)
         
-        setMessage({ type: "success", text: `Backup ${format.toUpperCase()} baixado com sucesso!` })
+        toast({
+          title: "Sucesso",
+          description: `Backup ${format.toUpperCase()} baixado com sucesso!`,
+          variant: "default"
+        })
         await logAdminAction("data_backup_downloaded", undefined, "backup", { format })
       } else {
-        setMessage({ type: "error", text: "Erro ao gerar backup" })
+        toast({
+          title: "Erro",
+          description: "Erro ao gerar backup",
+          variant: "destructive"
+        })
       }
     } catch (err) {
-      setMessage({ type: "error", text: "Erro ao gerar backup" })
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar backup",
+        variant: "destructive"
+      })
     } finally {
       setActionLoading(null)
     }
@@ -799,24 +902,29 @@ export default function AdminDashboard() {
       const jsonData = JSON.stringify(healthData, null, 2)
       const blob = new Blob([jsonData], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `system-health-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      const downloadAnchor = document.createElement('a')
+      downloadAnchor.href = url
+      downloadAnchor.download = `system-health-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(downloadAnchor)
+      downloadAnchor.click()
+      document.body.removeChild(downloadAnchor)
       URL.revokeObjectURL(url)
 
-      setMessage({ 
-        type: "success", 
-        text: "Métricas do sistema exportadas com sucesso!" 
+      toast({
+        title: "Sucesso",
+        description: "Métricas do sistema exportadas com sucesso!",
+        variant: "default"
       })
       
       await logAdminAction("system_health_exported", undefined, "export", { 
         metricsCount: systemMetricsHistory.timestamps.length 
       })
     } catch (error) {
-      setMessage({ type: "error", text: "Erro ao exportar métricas do sistema" })
+      toast({
+        title: "Erro",
+        description: "Erro ao exportar métricas do sistema",
+        variant: "destructive"
+      })
     } finally {
       setActionLoading(null)
     }
@@ -915,12 +1023,12 @@ export default function AdminDashboard() {
         const jsonData = JSON.stringify(logsToExport, null, 2)
         const blob = new Blob([jsonData], { type: 'application/json' })
         const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.json`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
+        const jsonDownload = document.createElement('a')
+        jsonDownload.href = url
+        jsonDownload.download = `audit-logs-${new Date().toISOString().split('T')[0]}.json`
+        document.body.appendChild(jsonDownload)
+        jsonDownload.click()
+        document.body.removeChild(jsonDownload)
         URL.revokeObjectURL(url)
       } else {
         // CSV export
@@ -940,18 +1048,19 @@ export default function AdminDashboard() {
         
         const blob = new Blob([csvData], { type: 'text/csv' })
         const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
+        const csvDownload = document.createElement('a')
+        csvDownload.href = url
+        csvDownload.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`
+        document.body.appendChild(csvDownload)
+        csvDownload.click()
+        document.body.removeChild(csvDownload)
         URL.revokeObjectURL(url)
       }
 
-      setMessage({ 
-        type: "success", 
-        text: `${logsToExport.length} logs de auditoria exportados como ${format.toUpperCase()}!` 
+      toast({
+        title: "Sucesso",
+        description: `${logsToExport.length} logs de auditoria exportados como ${format.toUpperCase()}!`,
+        variant: "default"
       })
       
       await logAdminAction("audit_logs_exported", undefined, "export", { 
@@ -960,7 +1069,11 @@ export default function AdminDashboard() {
         selectedOnly: selectedAuditLogs.length > 0 
       })
     } catch (error) {
-      setMessage({ type: "error", text: "Erro ao exportar logs de auditoria" })
+      toast({
+        title: "Erro",
+        description: "Erro ao exportar logs de auditoria",
+        variant: "destructive"
+      })
     } finally {
       setAuditExportLoading(false)
     }
@@ -1024,15 +1137,7 @@ export default function AdminDashboard() {
         <Button onClick={handleLogout} variant="outline">
           <LogOut className="w-4 h-4 mr-2" />
           Sair
-        </Button>
-      </div>
-
-      {/* Message Alert */}
-      {message && (
-        <Alert className={message.type === "error" ? "border-red-500" : message.type === "success" ? "border-green-500" : "border-blue-500"}>
-          <AlertDescription>{message.text}</AlertDescription>
-        </Alert>
-      )}
+        </Button>      </div>
 
       {/* Stats Overview */}
       {stats && (

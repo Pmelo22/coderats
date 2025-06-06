@@ -183,12 +183,10 @@ export async function updateUserData({
 
 export async function getLeaderboard(): Promise<LeaderboardUser[]> {
   const snapshot = await getDocs(collection(db, "users"));
-  const users: LeaderboardUser[] = [];
-
-  snapshot.forEach((docSnap) => {
+  const users: LeaderboardUser[] = [];  snapshot.forEach((docSnap) => {
     const d = docSnap.data();
     const user: LeaderboardUser = {
-      id: d.id,
+      id: docSnap.id || `user-${d.username || d.email || Date.now()}`, // Ensure unique ID
       username: d.username || d.name || "-",
       avatar_url: d.avatar_url,
       commits: d.commits || 0,

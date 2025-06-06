@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useToast } from "@/hooks/use-toast"
 import { 
   Shield, 
   AlertTriangle, 
@@ -49,6 +50,7 @@ export default function SecurityMonitoring() {
   const [metrics, setMetrics] = useState<SecurityMetrics | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     loadSecurityData()
@@ -114,14 +116,17 @@ export default function SecurityMonitoring() {
           loginAttempts24h: recentEvents.filter(e => e.type === 'login_attempt').length,
           failedLogins24h: recentEvents.filter(e => e.type === 'failed_auth').length
         })
-      }
-    } catch (error) {
+      }    } catch (error) {
       console.error('Error loading security data:', error)
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar dados de segurança",
+        description: "Não foi possível carregar as informações de monitoramento.",
+      })
     } finally {
       setLoading(false)
     }
   }
-
   const resolveSecurityEvent = async (eventId: string) => {
     try {
       const token = localStorage.getItem("adminToken")
@@ -148,8 +153,80 @@ export default function SecurityMonitoring() {
         })
       })
       
+      toast({
+        variant: "success",
+        title: "Evento de segurança resolvido",
+        description: "O evento foi marcado como resolvido com sucesso.",
+      })
+      
     } catch (error) {
       console.error('Error resolving security event:', error)
+      toast({
+        variant: "destructive",
+        title: "Erro ao resolver evento",
+        description: "Não foi possível marcar o evento como resolvido.",
+      })
+      
+      // Revert the change if there was an error
+      setSecurityEvents(prev => 
+        prev.map(event => 
+          event.id === eventId ? { ...event, resolved: false } : event
+        )
+      )    }
+  }
+
+  const blockSuspiciousIP = async (ipAddress: string) => {
+    try {
+      const token = localStorage.getItem("adminToken")
+      
+      // Call API to block IP (this would need to be implemented)
+      const response = await fetch("/api/admin/security/block-ip", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ipAddress })
+      })
+
+      if (response.ok) {
+        // Update local state
+        setMetrics(prev => prev ? {
+          ...prev,
+          bannedIPs: [...prev.bannedIPs, ipAddress],
+          suspiciousIPs: prev.suspiciousIPs.filter(ip => ip !== ipAddress)
+        } : prev)
+
+        toast({
+          variant: "success",
+          title: "IP bloqueado",
+          description: `O endereço IP ${ipAddress} foi bloqueado com sucesso.`,
+        })
+
+        // Log the action
+        await fetch("/api/admin/audit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            action: "ip_blocked",
+            targetId: ipAddress,
+            targetType: "ip_address",
+            details: { blockedAt: new Date().toISOString() }
+          })
+        })
+      } else {
+        throw new Error("Failed to block IP")
+      }
+    } catch (error) {
+      console.error('Error blocking IP:', error)
+      toast({
+        variant: "destructive",
+        title: "Erro ao bloquear IP",
+        description: "Não foi possível bloquear o endereço IP. Tente novamente.",
+      })
     }
   }
 
@@ -292,8 +369,7 @@ export default function SecurityMonitoring() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
               {metrics.suspiciousIPs.map((ip) => (
                 <div key={ip} className="flex items-center justify-between p-2 bg-yellow-50 rounded">
-                  <span className="font-mono text-sm">{ip}</span>
-                  <Button size="sm" variant="outline" className="text-xs">
+                  <span className="font-mono text-sm">{ip}</span>                  <Button size="sm" variant="outline" className="text-xs" onClick={() => blockSuspiciousIP(ip)}>
                     Block
                   </Button>
                 </div>

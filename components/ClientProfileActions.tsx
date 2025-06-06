@@ -2,12 +2,29 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { Share2, Github } from "lucide-react";
 
 export default function ClientProfileActions({ githubUrl }: { githubUrl?: string }) {
-  const handleShare = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
+  const { toast } = useToast();
+  
+  const handleShare = async () => {
+    try {
+      if (typeof window !== "undefined") {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          variant: "success",
+          title: "Link copiado!",
+          description: "O link do perfil foi copiado para a área de transferência.",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao copiar link:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao copiar",
+        description: "Não foi possível copiar o link. Tente novamente.",
+      });
     }
   };
 

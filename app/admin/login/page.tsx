@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Shield, Eye, EyeOff, Loader2 } from "lucide-react"
 
 export default function AdminLogin() {
+  const { toast } = useToast()
   const [credentials, setCredentials] = useState({ username: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
@@ -42,11 +44,17 @@ export default function AdminLogin() {
         body: JSON.stringify(credentials),
       })
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
         // Armazenar token de admin no localStorage
         localStorage.setItem("adminToken", data.token)
+        
+        toast({
+          variant: "success",
+          title: "Login realizado com sucesso",
+          description: "Redirecionando para o painel administrativo...",
+        })
         
         // Feedback visual de sucesso
         setError("") 
@@ -54,12 +62,21 @@ export default function AdminLogin() {
         // Redirecionar após pequeno delay para melhor UX
         setTimeout(() => {
           router.push("/admin/dashboard")
-        }, 100)
-      } else {
+        }, 100)      } else {
         setError(data.error || "Credenciais inválidas")
+        toast({
+          variant: "destructive",
+          title: "Erro no login",
+          description: data.error || "Credenciais inválidas. Verifique seus dados.",
+        })
       }
     } catch (err) {
       setError("Erro ao conectar com o servidor. Tente novamente.")
+      toast({
+        variant: "destructive",
+        title: "Erro de conexão",
+        description: "Não foi possível conectar com o servidor. Tente novamente.",
+      })
     } finally {
       setLoading(false)
     }

@@ -128,7 +128,8 @@ export function useUserDataSync() {
           diversity: Math.max(githubStats.diversity, totalContributions.repositories),
           platforms: platformData.platforms
         } as UserStats;
-      }      const result = {
+      }
+      const result = {
         userStats,
         leaderboard,
         lastUpdated: new Date().toISOString()

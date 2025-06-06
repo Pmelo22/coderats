@@ -3,8 +3,6 @@
 
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { getGitHubUserStats } from '@/lib/github/getUserStats'
-import { updateUserData, getLeaderboard } from '@/lib/firestore-user';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +25,9 @@ import ScoreRecommendations from "@/components/score-recommendations";
 import UserRepositories from "@/components/user-repositories";
 import PlatformConnector from "@/components/PlatformConnector";
 import PlatformContributionBadges from "@/components/PlatformContributionBadges";
-import { toast } from "@/components/ui/use-toast";
+import { useUserDataSync } from "@/hooks/use-user-data-sync";
+import { updateUserData } from "@/lib/firestore-user";
+import { useToast } from "@/hooks/use-toast";
 
 
 interface UserStats {
@@ -51,6 +51,8 @@ interface UserStats {
 
 export default function UserProfile() {
   const { data: session, status } = useSession();
+  const { syncUserData, isUpdating } = useUserDataSync();
+  const { toast } = useToast();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,81 +74,22 @@ export default function UserProfile() {
     };
   }, []);
   
-    useEffect(() => {
+  useEffect(() => {
     async function loadStats() {
       if (!session?.user || synced) return;
 
-      // Usar email como identificador consistente
-      const userEmail = session.user.email;
-      const username = session.user.login;
+      setLoading(true);
       
-      if (!userEmail) {
-        console.warn("⚠️ Email do usuário não disponível na sessão.");
-        setLoading(false);
-        return;
-      }
-
       try {
-        console.log("🔄 Carregando dados do usuário...");
-          // Buscar dados salvos no Firebase primeiro
-        const response = await fetch('/api/platforms/connect');
-        const userData = await response.json();
+        const result = await syncUserData(false, false);
         
-        let userStats = null;
-        
-        // Se tem dados do GitHub, buscar estatísticas
-        if (username && session.accessToken) {
-          await updateUserData({
-            username,
-            token: session.accessToken as string,
-            avatar_url: session.user.image || undefined,
-            name: session.user.name || undefined,
-            email: userEmail,
-            force: false,
-          });
-
-          // Buscar dados atualizados do Firestore para obter lastResetDate
-          const updatedResponse = await fetch('/api/platforms/connect');
-          const updatedUserData = await updatedResponse.json();
-          const resetDate = updatedUserData.lastResetDate || null;
-
-          const [githubStats, leaderboard] = await Promise.all([
-            getGitHubUserStats(username, session.accessToken as string, resetDate),
-            getLeaderboard()
-          ]);
-          
-          // Agregar contribuições de todas as plataformas
-          if (userData.platforms && Object.keys(userData.platforms).length > 0) {
-            const totalContributions = Object.values(userData.platforms).reduce(
-              (acc: { commits: number; pull_requests: number; issues: number; repositories: number }, platform: any) => {
-                acc.commits += platform.commits || 0;
-                acc.pull_requests += platform.pull_requests || 0;
-                acc.issues += platform.issues || 0;
-                acc.repositories += platform.repositories || 0;
-                return acc;
-              },
-              { commits: 0, pull_requests: 0, issues: 0, repositories: 0 }
-            );
-
-            userStats = {
-              ...githubStats,
-              commits: Math.max(githubStats.commits, totalContributions.commits),
-              pullRequests: Math.max(githubStats.pullRequests, totalContributions.pull_requests),
-              issues: Math.max(githubStats.issues, totalContributions.issues),
-              diversity: Math.max(githubStats.diversity, totalContributions.repositories),
-              platforms: userData.platforms
-            };
-          } else {
-            userStats = githubStats;
-          }
-          
-          setAllUsers(leaderboard);
+        if (result) {
+          setStats(result.userStats);
+          setAllUsers(result.leaderboard);
+          setSynced(true);
         }
-        
-        setStats(userStats);
-        setSynced(true);
       } catch (error) {
-        console.error("❌ Erro ao buscar dados do usuário:", error);
+        console.error("❌ Erro ao carregar dados do usuário:", error);
       } finally {
         setLoading(false);
       }
@@ -157,7 +100,7 @@ export default function UserProfile() {
     } else if (status === 'unauthenticated') {
       setLoading(false);
     }
-  }, [session, status, synced]);
+  }, [session, status, synced, syncUserData]);
 
 
 
@@ -236,20 +179,31 @@ export default function UserProfile() {
               </Link>
             </Button>
             <h1 className="text-2xl font-bold">Seu Perfil</h1>
-          </div>            <Button
-            onClick={async () => {              
-              const result = await updateUserData({
+          </div>          <Button
+            onClick={async () => {
+              try {
+                const result = await updateUserData({
                   username: session.user.login ?? "",
                   token: session.accessToken ?? "",
                   avatar_url: session.user.image || undefined,
                   name: session.user.name || undefined,
                   email: session.user.email || undefined,
                   force: true, // ⬅️ atualização manual
-                    });
-              toast({
+                });
+                setSynced(false); // Trigger reload
+                toast({
+                  variant: "success",
                   title: "Perfil atualizado",
                   description: "Seus dados foram atualizados com sucesso.",
-              });
+                });
+              } catch (error) {
+                console.error("Erro ao atualizar perfil:", error);
+                toast({
+                  variant: "destructive",
+                  title: "Erro na atualização",
+                  description: "Não foi possível atualizar seus dados. Tente novamente.",
+                });
+              }
             }}
           >
             Atualizar agora

@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar"
 import { SessionProvider } from "@/components/session-provider"
 import EmailPermissionAlert from "@/components/EmailPermissionAlert"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 export const metadata = {
@@ -26,10 +27,10 @@ export default function RootLayout({
           crossOrigin="anonymous"></script>
       </head>
       <body className="min-h-screen bg-gray-900 text-white">        <SessionProvider>
-        <ThemeProvider attribute="class" defaultTheme="dark">
-          <Navbar />
+        <ThemeProvider attribute="class" defaultTheme="dark">          <Navbar />
           <EmailPermissionAlert />
           <main>{children}</main>
+          <Toaster />
           <footer className="w-full mt-16 border-t border-gray-800 bg-gray-900/80 text-gray-300 py-8 px-4 flex flex-col items-center gap-4">
             <div className="w-full flex flex-col md:flex-row justify-center items-start md:items-start gap-8 md:gap-0 max-w-4xl mx-auto text-center">
               {/* Contato */}

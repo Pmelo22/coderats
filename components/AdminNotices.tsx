@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { X, Info, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
@@ -20,6 +21,7 @@ interface AdminNoticesProps {
 }
 
 export default function AdminNotices({ location }: AdminNoticesProps) {
+  const { toast } = useToast()
   const [notices, setNotices] = useState<AdminNotice[]>([])
   const [dismissedNotices, setDismissedNotices] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,18 +47,26 @@ export default function AdminNotices({ location }: AdminNoticesProps) {
           notice.isActive && (notice.location === location || notice.location === 'both')
         )
         setNotices(filteredNotices)
-      }
-    } catch (error) {
+      }    } catch (error) {
       console.error('Erro ao buscar avisos:', error)
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar avisos",
+        description: "Não foi possível carregar os avisos administrativos.",
+      })
     } finally {
       setLoading(false)
     }
   }
-
   const dismissNotice = (noticeId: string) => {
     const newDismissed = [...dismissedNotices, noticeId]
     setDismissedNotices(newDismissed)
     localStorage.setItem('dismissed_admin_notices', JSON.stringify(newDismissed))
+    toast({
+      variant: "success",
+      title: "Aviso dispensado",
+      description: "O aviso foi removido com sucesso.",
+    })
   }
 
   const getIcon = (type: string) => {

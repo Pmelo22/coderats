@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Mail, X, ExternalLink } from "lucide-react"
@@ -8,6 +9,7 @@ import { useSession } from 'next-auth/react'
 
 export default function EmailPermissionAlert() {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const [showAlert, setShowAlert] = useState(false)
   const [dismissed, setDismissed] = useState(false)
 
@@ -46,20 +48,32 @@ export default function EmailPermissionAlert() {
               <p className="text-sm mb-3">
                 Para usar todas as funcionalidades do CodeRats, precisamos acessar seu email do GitHub.
               </p>
-              <div className="flex gap-2">
-                <Button 
+              <div className="flex gap-2">                <Button 
                   size="sm" 
                   className="bg-orange-600 hover:bg-orange-700 text-white"
-                  onClick={() => window.open('https://github.com/settings/emails', '_blank')}
+                  onClick={() => {
+                    window.open('https://github.com/settings/emails', '_blank')
+                    toast({
+                      variant: "default",
+                      title: "Configuração aberta",
+                      description: "Configure seu email no GitHub e faça login novamente.",
+                    })
+                  }}
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
                   Configurar
-                </Button>
-                <Button 
+                </Button>                <Button 
                   size="sm" 
                   variant="outline" 
                   className="border-orange-500 text-orange-300 hover:bg-orange-500/20"
-                  onClick={() => setDismissed(true)}
+                  onClick={() => {
+                    setDismissed(true)
+                    toast({
+                      variant: "default",
+                      title: "Alerta dispensado",
+                      description: "Você pode configurar o email a qualquer momento nas configurações do GitHub.",
+                    })
+                  }}
                 >
                   Entendi
                 </Button>

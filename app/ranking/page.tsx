@@ -1,3 +1,7 @@
+'use client'
+
+import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,38 +15,92 @@ import {
   GitForkIcon,
   Code,
   Users,
+  RefreshCw,
 } from "lucide-react"
-import { getLeaderboard, LeaderboardUser, updateUserData } from "@/lib/firestore-user"
+import { LeaderboardUser } from "@/lib/firestore-user"
 import RankingNote from "./note"
 import RankingCriteria from "./criteria"
 import AdminNotices from "@/components/AdminNotices"
 import PlatformContributionBadges from "@/components/PlatformContributionBadges"
+import { useUserDataSync } from "@/hooks/use-user-data-sync"
 
-export const revalidate = 0
+export default function RankingPage() {
+  const { data: session } = useSession()
+  const [users, setUsers] = useState<LeaderboardUser[]>([])
+  const [lastUpdated, setLastUpdated] = useState<string>("")
+  const [loading, setLoading] = useState(true)
+  const { syncUserData, syncLeaderboard, isUpdating } = useUserDataSync()
 
+  useEffect(() => {
+    loadRankingData()
+  }, [])
 
-export default async function RankingPage() {
-  // Busca o ranking e a última atualização usando a função utilitária
-  const { users, lastUpdated } = await (async () => {
-    const leaderboard: LeaderboardUser[] = await getLeaderboard()
-    // Busca a última atualização (pode ser melhorado para buscar do Firestore)
-    let lastUpdated = new Date().toISOString()
-    if (leaderboard.length > 0 && leaderboard[0].updated_at) {
-      lastUpdated = leaderboard[0].updated_at
+  const loadRankingData = async (showLoadingToast = false) => {
+    try {
+      // If user is authenticated, sync their data first
+      if (session?.user) {
+        const syncResult = await syncUserData(showLoadingToast, false)
+        if (syncResult) {
+          setUsers(syncResult.leaderboard)
+          setLastUpdated(syncResult.lastUpdated)
+          setLoading(false)
+          return
+        }
+      }
+      
+      // Fallback to leaderboard-only sync for non-authenticated users
+      const leaderboardResult = await syncLeaderboard(showLoadingToast)
+      if (leaderboardResult) {
+        setUsers(leaderboardResult.leaderboard)
+        setLastUpdated(leaderboardResult.lastUpdated)
+      }
+    } catch (error) {
+      console.error("Error loading ranking data:", error)
+    } finally {
+      setLoading(false)
     }
-    return { users: leaderboard, lastUpdated }
-  })()
+  }
+  const handleRefresh = () => {
+    loadRankingData(true)
+  }
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-emerald-500" />
+              <p className="text-gray-400">Carregando ranking...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-  return (    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 py-8">
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 py-8">
       <div className="max-w-6xl mx-auto">
         {/* Admin Notices */}
         <AdminNotices location="ranking" />
         
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">GitHub Contributions Ranking</h1>
-          <Button asChild variant="outline" className="border-gray-600 text-gray-200 hover:bg-gray-700">
-            <Link href="/">Back to Home</Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleRefresh}
+              disabled={isUpdating}
+              variant="outline" 
+              className="border-gray-600 text-gray-200 hover:bg-gray-700"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isUpdating ? 'animate-spin' : ''}`} />
+              {isUpdating ? 'Atualizando...' : 'Atualizar'}
+            </Button>
+            <Button asChild variant="outline" className="border-gray-600 text-gray-200 hover:bg-gray-700">
+              <Link href="/">Back to Home</Link>
+            </Button>
+          </div>
         </div>
 
         <RankingNote />
@@ -52,8 +110,7 @@ export default async function RankingPage() {
         <Card className="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-8">
           <CardHeader className="px-0 pt-0">
             <div className="flex flex-col md:flex-row justify-between items-center mb-4">
-              <CardTitle className="text-2xl font-bold mb-4 md:mb-0">Ranking Geral</CardTitle>
-              <div className="text-sm text-gray-400">
+              <CardTitle className="text-2xl font-bold mb-4 md:mb-0">Ranking Geral</CardTitle>              <div className="text-sm text-gray-400">
                 Last updated: {new Date(lastUpdated).toLocaleString()} • Updates daily
               </div>
             </div>

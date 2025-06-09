@@ -38,32 +38,40 @@ export default function Navbar() {
     }
   }, [isMobile])
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-700 bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-gray-900/75">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-700 bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-gray-900/75">      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
+          {/* Logo Section - Fixed width for symmetry */}
+          <div className="flex items-center w-48">
             <Link href="/" className="flex items-center gap-2">
               <img src="/icon.png" alt="Logo" className="h-7 w-7 rounded" />
               <span className="text-lg font-bold">Coderats</span>
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
+          {/* Desktop Navigation - Centered */}
+          <nav className="hidden md:flex items-center justify-center gap-8 flex-1">
             <Link href="/" className="text-sm font-medium hover:text-emerald-400 transition-colors">
               Home
+            </Link>
+            <Link href="/sobre" className="text-sm font-medium hover:text-emerald-400 transition-colors">
+              Sobre
             </Link>
             <Link href="/ranking" className="text-sm font-medium hover:text-emerald-400 transition-colors">
               Ranking
             </Link>
-            {isAuthenticated && (
-              <Link href="/profile" className="text-sm font-medium hover:text-emerald-400 transition-colors">
-                Meu Perfil
-              </Link>
-            )}
+            <Link href="/blog" className="text-sm font-medium hover:text-emerald-400 transition-colors">
+              Blog
+            </Link>
+            <Link href="/faq" className="text-sm font-medium hover:text-emerald-400 transition-colors">
+              FAQ
+            </Link>
+            <Link href="/contato" className="text-sm font-medium hover:text-emerald-400 transition-colors">
+              Contato
+            </Link>
           </nav>
 
-          <div className="flex items-center gap-2">
+          {/* User Actions Section - Fixed width for symmetry */}
+          <div className="flex items-center justify-end gap-2 w-48">
             {/* Mobile menu button */}
             <div className="md:hidden">
               <Button
@@ -221,8 +229,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Navigation Menu */}
-        {isMobileMenuOpen && (
+        {/* Mobile Navigation Menu */}        {isMobileMenuOpen && (
           <div className="md:hidden border-t border-gray-700 py-4">
             <nav className="flex flex-col space-y-4">
               <Link 
@@ -233,11 +240,39 @@ export default function Navbar() {
                 Home
               </Link>
               <Link 
+                href="/sobre" 
+                className="text-sm font-medium hover:text-emerald-400 transition-colors px-2 py-1"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Sobre
+              </Link>
+              <Link 
                 href="/ranking" 
                 className="text-sm font-medium hover:text-emerald-400 transition-colors px-2 py-1"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Ranking
+              </Link>
+              <Link 
+                href="/blog" 
+                className="text-sm font-medium hover:text-emerald-400 transition-colors px-2 py-1"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Blog
+              </Link>
+              <Link 
+                href="/faq" 
+                className="text-sm font-medium hover:text-emerald-400 transition-colors px-2 py-1"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                FAQ
+              </Link>
+              <Link 
+                href="/contato" 
+                className="text-sm font-medium hover:text-emerald-400 transition-colors px-2 py-1"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Contato
               </Link>
               {isAuthenticated && (
                 <Link 

@@ -7,9 +7,57 @@ import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 export const metadata = {
-  title: "GitHub Contributions Ranking",
-  description: "Track and compete with other developers based on GitHub contributions",
-  generator: 'v0.dev'
+  title: {
+    default: "CodeRats - Ranking de Desenvolvedores GitHub",
+    template: "%s | CodeRats"
+  },
+  description: "Acompanhe e compare seu desempenho com outros desenvolvedores através do ranking baseado em contribuições do GitHub. Descubra, aprenda e evolua na comunidade de desenvolvedores.",
+  keywords: ["GitHub", "ranking", "desenvolvedores", "programação", "open source", "contributions", "coding", "software", "Brasil"],
+  authors: [{ name: "Patrick Albuquerque" }, { name: "Luis Guilherme" }],
+  creator: "CodeRats Team",
+  publisher: "CodeRats",
+  applicationName: "CodeRats",
+  generator: "Next.js",
+  metadataBase: new URL('https://coderats.com.br'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: "CodeRats - Ranking de Desenvolvedores GitHub",
+    description: "Acompanhe e compare seu desempenho com outros desenvolvedores através do ranking baseado em contribuições do GitHub.",
+    url: 'https://coderats.com.br',
+    siteName: 'CodeRats',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'CodeRats - Ranking de Desenvolvedores',
+      },
+    ],
+    locale: 'pt_BR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "CodeRats - Ranking de Desenvolvedores GitHub",
+    description: "Acompanhe e compare seu desempenho com outros desenvolvedores através do ranking baseado em contribuições do GitHub.",
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'google-verification-code',
+  },
 }
 
 export default function RootLayout({
@@ -30,39 +78,76 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark">          <Navbar />
           <EmailPermissionAlert />
           <main>{children}</main>
-          <Toaster />          <footer className="w-full mt-16 border-t border-gray-800 bg-gray-900/80 text-gray-300 py-8 px-4 flex flex-col items-center gap-4">
-            <div className="w-full flex flex-col md:flex-row justify-center items-center md:items-start gap-8 md:gap-0 max-w-6xl mx-auto text-center">
-              {/* Contato */}
-              <div className="flex-1 px-2 min-w-[200px]">
-                <span className="block font-semibold text-emerald-400 mb-1">Contato com a equipe</span>
-                <a href="mailto:contato@coderats.com" className="underline hover:text-emerald-400 break-all">contato@coderats.com</a>
+          <Toaster />          <footer className="w-full mt-16 border-t border-gray-800 bg-gray-900/80 text-gray-300 py-8 px-4">
+            <div className="max-w-6xl mx-auto">
+              {/* Links úteis */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                  <h3 className="text-emerald-400 font-semibold mb-3">Navegação</h3>
+                  <ul className="space-y-2 text-sm">
+                    <li><a href="/" className="hover:text-emerald-400 transition-colors">Home</a></li>
+                    <li><a href="/sobre" className="hover:text-emerald-400 transition-colors">Sobre</a></li>
+                    <li><a href="/ranking" className="hover:text-emerald-400 transition-colors">Ranking</a></li>
+                    <li><a href="/blog" className="hover:text-emerald-400 transition-colors">Blog</a></li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h3 className="text-emerald-400 font-semibold mb-3">Suporte</h3>
+                  <ul className="space-y-2 text-sm">
+                    <li><a href="/faq" className="hover:text-emerald-400 transition-colors">FAQ</a></li>
+                    <li><a href="/contato" className="hover:text-emerald-400 transition-colors">Contato</a></li>
+                    <li><a href="mailto:contato@coderats.com" className="hover:text-emerald-400 transition-colors">Email</a></li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-emerald-400 font-semibold mb-3">Legal</h3>
+                  <ul className="space-y-2 text-sm">
+                    <li><a href="/privacidade" className="hover:text-emerald-400 transition-colors">Política de Privacidade</a></li>
+                    <li><a href="/termos" className="hover:text-emerald-400 transition-colors">Termos de Uso</a></li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-emerald-400 font-semibold mb-3">Social</h3>
+                  <ul className="space-y-2 text-sm">
+                    <li><a href="https://github.com/Pmelo22" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">GitHub</a></li>
+                    <li><a href="#" className="hover:text-emerald-400 transition-colors">Twitter</a></li>
+                    <li><a href="#" className="hover:text-emerald-400 transition-colors">LinkedIn</a></li>
+                  </ul>
+                </div>
               </div>
-              {/* Desenvolvido por */}
-              <div className="flex-1 px-2 min-w-[200px]">
-                <span className="block font-semibold text-emerald-400 mb-1">Desenvolvido por</span>
-                <span className="block text-xs">Equipe Coderats &copy; {new Date().getFullYear()}</span>
-                <span className="block text-xs">
-                  Créditos:
-                  <a href="https://github.com/Pmelo22" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400 ml-1">Patrick Albuquerque</a>
-                  <span className="mx-1">|</span>
-                  <a href="https://github.com/Luluzao0" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400">Luis Guilherme</a>
-                </span>
-              </div>
-              {/* Dedicatória */}
-              <div className="flex-1 px-2 min-w-[280px] flex flex-col items-center justify-center text-center">
-                <span className="block font-semibold text-emerald-400 mb-1 text-center">Dedicatória</span>
-                <span className="block text-xs mb-2 text-center max-w-[260px]">Para a pessoa que mais amo nesse mundo, mesmo distante, amar-te-ei para sempre. L</span>
-                <div className="flex justify-center w-full max-w-[280px]">
-                  <iframe
-                    style={{ borderRadius: '12px' }}
-                    src="https://open.spotify.com/embed/track/4IiviKTCCIJSYsWzxCpqsD?utm_source=generator"
-                    width="100%"
-                    height="152"
-                    frameBorder="0"
-                    allowFullScreen={true}
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    loading="lazy"
-                  ></iframe>
+
+              {/* Informações da empresa */}
+              <div className="border-t border-gray-700 pt-8">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+                  <div>
+                    <p className="text-sm">
+                      &copy; {new Date().getFullYear()} Coderats. Todos os direitos reservados.
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Desenvolvido por{" "}
+                      <a href="https://github.com/Pmelo22" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400">Patrick Albuquerque</a>
+                      {" e "}
+                      <a href="https://github.com/Luluzao0" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400">Luis Guilherme</a>
+                    </p>
+                  </div>
+                  
+                  {/* Dedicatória */}
+                  <div className="text-center">
+                    <p className="text-xs text-gray-400 mb-2">Para a pessoa que mais amo nesse mundo, mesmo distante, amar-te-ei para sempre. L</p>
+                    <iframe
+                      style={{ borderRadius: '8px' }}
+                      src="https://open.spotify.com/embed/track/4IiviKTCCIJSYsWzxCpqsD?utm_source=generator"
+                      width="280"
+                      height="100"
+                      frameBorder="0"
+                      allowFullScreen={true}
+                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                      loading="lazy"
+                    ></iframe>
+                  </div>
                 </div>
               </div>
             </div>

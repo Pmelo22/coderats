@@ -17,7 +17,7 @@ interface AdminNotice {
 }
 
 interface AdminNoticesProps {
-  location: 'home' | 'ranking'
+  location: 'home' | 'ranking' | 'sobre' | 'privacidade' | 'faq' | 'contato' | 'blog' | 'blogPost'
 }
 
 export default function AdminNotices({ location }: AdminNoticesProps) {
